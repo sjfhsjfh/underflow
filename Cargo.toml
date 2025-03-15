@@ -1,7 +1,13 @@
-[package]
-name = "underflow"
-version = "0.1.0"
-edition = "2024"
+[workspace]
+resolver = "2"
+members = ["underflow-core", "underflow-main"]
 
-[dependencies]
+[workspace.package]
+# description = ""
+edition = "2024"
+# license = "MIT"
+repository = "https://github.com/sjfhsjfh/underflow"
+version = "0.0.2"
+
+[workspace.dependencies]
 macroquad = "0.4.13"
