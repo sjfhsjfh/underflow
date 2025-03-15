@@ -1,3 +1,9 @@
-fn main() {
-    println!("Hello, world!");
+use macroquad::prelude::*;
+
+#[macroquad::main("Underflow")]
+async fn main() {
+    loop {
+        clear_background(WHITE);
+        next_frame().await
+    }
 }
