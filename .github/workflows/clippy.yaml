@@ -5,7 +5,7 @@ on:
   pull_request: {}
 
 jobs:
-  cargo-test:
+  clippy_check:
     runs-on: ubuntu-latest
     permissions:
       contents: read
