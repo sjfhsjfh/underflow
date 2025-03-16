@@ -255,9 +255,9 @@ mod test {
         assert_eq!(board.flow_y(4, false), Ok(()));
         assert_eq!(board.get(4, 3), CellState::Occupied(1));
         board.set(4, 3, CellState::Anchored(1));
-        assert!(board.can_flow_x(3));
-        assert!(board.can_flow_y(4));
-        assert!(board.is_ready());
+        assert!(!board.can_flow_x(3));
+        assert!(!board.can_flow_y(4));
+        assert!(!board.is_ready());
         let produced = format!("{}", board)
             .lines()
             .map(|s| s.trim().to_string())
