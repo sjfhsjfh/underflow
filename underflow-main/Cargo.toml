@@ -7,4 +7,8 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
+anyhow = { workspace = true }
 macroquad = { workspace = true }
+once_cell = { workspace = true }
+tokio = { workspace = true }
+underflow-core = { workspace = true }
