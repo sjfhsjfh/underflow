@@ -1,5 +1,13 @@
-use macroquad::{color::Color, math::vec2, shapes::draw_circle, ui::hash, window::screen_width};
+use macroquad::{
+    color::Color,
+    math::{Rect, vec2},
+    prelude::debug,
+    ui::hash,
+    window::screen_width,
+};
 use underflow_core::Board;
+
+use crate::ui::{Ui, button::DRectButton};
 
 use super::{NextScene, Scene};
 
@@ -10,6 +18,7 @@ pub struct GameInitConfig {
 pub struct GameData {
     pub board: Board,
     pub config: GameInitConfig,
+    pub pause_btn: DRectButton,
 }
 
 pub(crate) struct GameScene {
@@ -23,9 +32,13 @@ impl GameScene {
             data: GameData {
                 board: Board::new(config.size),
                 config,
+
+                pause_btn: DRectButton::new(),
             },
         }
     }
+
+    pub fn draw_board() {}
 }
 
 impl Scene for GameScene {
@@ -34,17 +47,7 @@ impl Scene for GameScene {
         NextScene::None
     }
 
-    fn render(&mut self, ui: &mut macroquad::ui::Ui) -> anyhow::Result<()> {
-        // Implement rendering logic here
-        // ui.label(macroquad::math::vec2(30., 30.), "Game Scene");
-        ui.window(
-            hash!(),
-            vec2(0., 0.),
-            vec2(screen_width(), screen_width()),
-            |ui| {
-                draw_circle(0., 0., 20., Color::from_hex(0x000000));
-            },
-        );
+    fn render(&mut self, ui: &mut Ui) -> anyhow::Result<()> {
         Ok(())
     }
 }
