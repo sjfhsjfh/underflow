@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::fmt;
+use std::fmt::Formatter;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
@@ -199,6 +201,23 @@ impl Board {
     }
 }
 
+impl fmt::Display for Board {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        for row in &self.cells {
+            for cell in row {
+                match cell {
+                    CellState::Empty => write!(f, "█  ")?,
+                    CellState::Neutral => write!(f, "N  ")?,
+                    CellState::Occupied(id) => write!(f, "O{} ", id)?,
+                    CellState::Anchored(id) => write!(f, "A{} ", id)?,
+                }
+            }
+            writeln!(f)?;
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -226,5 +245,21 @@ mod test {
         assert_eq!(board.can_flow_x(3), false);
         assert_eq!(board.can_flow_y(4), false);
         assert_eq!(board.is_ready(), false);
+        let produced = format!("{}", board)
+            .lines()
+            .map(|s| s.trim().to_string())
+            .collect::<Vec<String>>()
+            .join("\n");
+        let expected = [
+            "N  █  █  N  █  █  N",
+            "█  █  █  █  █  █  █",
+            "█  █  █  █  █  █  █",
+            "█  █  █  █  █  █  █",
+            "█  █  █  A1 █  █  N",
+            "█  █  █  █  █  █  █",
+            "N  █  █  █  █  █  N",
+        ]
+        .join("\n");
+        assert_eq!(produced, expected);
     }
 }
