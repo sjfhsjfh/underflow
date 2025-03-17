@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 
+#[allow(dead_code)]
 const SERVER_ID: u8 = u8::MAX;
 
 /// An enum that describes the types of commands the server handles.
@@ -21,8 +22,9 @@ pub enum CommandContent {
 #[repr(u8)]
 pub enum ResponseContent {
     GameOver(u8),
-    PhaseChange,
-    Valid,
+    PhaseChange(u8),
+    Valid(u8),
+    Elimination(u8, u8),
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, PartialEq, Debug)]

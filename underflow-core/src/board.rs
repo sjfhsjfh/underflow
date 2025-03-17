@@ -41,6 +41,7 @@ pub enum BoardStat {
 impl BoardStat {
     /// Unwraps the board stat when it is ready (i.e. first filled with blocks), 
     /// and panics when it is not ready.
+    #[allow(dead_code)]
     pub fn unwrap(self) -> (HashMap<u8, u8>, usize) {
         if let BoardStat::Ready { player_stat, total_occupied } = self {
             (player_stat, total_occupied)
