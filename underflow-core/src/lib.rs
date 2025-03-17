@@ -1,4 +1,7 @@
 use std::collections::HashMap;
+use std::error::Error;
+use std::fmt;
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
@@ -9,12 +12,28 @@ pub enum CellState {
     Anchored(u8),
 }
 
+#[derive(Debug, PartialEq, Eq)]
+#[repr(u8)]
+pub enum FlowError {
+    BlockedByAnchor,
+    OutOfBounds,
+}
+
+impl Display for FlowError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            FlowError::BlockedByAnchor => write!(f, "Blocked by anchor")?,
+            FlowError::OutOfBounds => write!(f, "Argument out of bounds")?,
+        }
+        Ok(())
+    }
+}
+
+impl Error for FlowError {}
+
 impl CellState {
     pub fn is_anchor(&self) -> bool {
-        match self {
-            CellState::Anchored(_) => true,
-            _ => false,
-        }
+        matches!(self, CellState::Anchored(_))
     }
 
     /// Check if the cell is occupied, return the player id if true
@@ -67,26 +86,22 @@ impl Board {
     #[inline]
     /// Check if all the cells in this row are not anchored, no size check
     pub fn can_flow_x(&self, y: u8) -> bool {
-        !(0..self.size)
-            .into_iter()
-            .any(|x| self.get(x, y).is_anchor())
+        !(0..self.size).any(|x| self.get(x, y).is_anchor())
     }
 
     #[inline]
     /// Check if all the cells in this column are not anchored, no size check
     pub fn can_flow_y(&self, x: u8) -> bool {
-        !(0..self.size)
-            .into_iter()
-            .any(|y| self.get(x, y).is_anchor())
+        !(0..self.size).any(|y| self.get(x, y).is_anchor())
     }
 
     /// Flow the cells in the x-axis, if this row is anchored, or the row is out of bound, return `Err`
-    pub fn flow_x(&mut self, y: u8, positive: bool) -> Result<(), ()> {
+    pub fn flow_x(&mut self, y: u8, positive: bool) -> Result<(), FlowError> {
         if !self.can_flow_x(y) {
-            return Err(());
+            return Err(FlowError::BlockedByAnchor);
         }
         if y >= self.size {
-            return Err(());
+            return Err(FlowError::OutOfBounds);
         }
         if positive {
             for x in (0..self.size).rev() {
@@ -111,12 +126,12 @@ impl Board {
     }
 
     /// Flow the cells in the y-axis, if this column is anchored, or the column is out of bound, return `Err`
-    pub fn flow_y(&mut self, x: u8, positive: bool) -> Result<(), ()> {
+    pub fn flow_y(&mut self, x: u8, positive: bool) -> Result<(), FlowError> {
         if !self.can_flow_y(x) {
-            return Err(());
+            return Err(FlowError::BlockedByAnchor);
         }
         if x >= self.size {
-            return Err(());
+            return Err(FlowError::OutOfBounds);
         }
         if positive {
             for y in (0..self.size).rev() {
@@ -140,7 +155,7 @@ impl Board {
         Ok(())
     }
 
-    /// Fill the board to make the emtpy cell count is a multiple of player count
+    /// Fill the board to make the empty cell count is a multiple of player count
     pub fn init(player_count: u8, size: u8) -> Self {
         let mut board = Self::new(size);
         // TODO: currently only 2-4 players are supported
@@ -151,7 +166,7 @@ impl Board {
                 }
                 let center = size / 2;
                 board.set(center, center, CellState::Neutral);
-                return board;
+                board
             }
             3 => {
                 if size % 3 == 0 {
@@ -161,7 +176,7 @@ impl Board {
                 board.set(0, size - 1, CellState::Neutral);
                 board.set(size - 1, 0, CellState::Neutral);
                 board.set(size - 1, size - 1, CellState::Neutral);
-                return board;
+                board
             }
             _ => panic!("Unsupported player count"),
         }
@@ -199,6 +214,23 @@ impl Board {
     }
 }
 
+impl Display for Board {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        for row in &self.cells {
+            for cell in row {
+                match cell {
+                    CellState::Empty => write!(f, "█  ")?,
+                    CellState::Neutral => write!(f, "N  ")?,
+                    CellState::Occupied(id) => write!(f, "O{} ", id)?,
+                    CellState::Anchored(id) => write!(f, "A{} ", id)?,
+                }
+            }
+            writeln!(f)?;
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -214,8 +246,8 @@ mod test {
         assert_eq!(board.get(3, 3), CellState::Empty);
         board.set(3, 3, CellState::Occupied(1));
         assert_eq!(board.get(3, 3), CellState::Occupied(1));
-        assert_eq!(board.can_flow_x(3), true);
-        assert_eq!(board.can_flow_y(3), true);
+        assert!(board.can_flow_x(3));
+        assert!(board.can_flow_y(3));
         assert_eq!(board.flow_x(3, true), Ok(()));
         assert_eq!(board.get(3, 3), CellState::Empty);
         assert_eq!(board.get(4, 3), CellState::Occupied(1));
@@ -223,8 +255,24 @@ mod test {
         assert_eq!(board.flow_y(4, false), Ok(()));
         assert_eq!(board.get(4, 3), CellState::Occupied(1));
         board.set(4, 3, CellState::Anchored(1));
-        assert_eq!(board.can_flow_x(3), false);
-        assert_eq!(board.can_flow_y(4), false);
-        assert_eq!(board.is_ready(), false);
+        assert!(!board.can_flow_x(3));
+        assert!(!board.can_flow_y(4));
+        assert!(!board.is_ready());
+        let produced = format!("{}", board)
+            .lines()
+            .map(|s| s.trim().to_string())
+            .collect::<Vec<String>>()
+            .join("\n");
+        let expected = [
+            "N  █  █  N  █  █  N",
+            "█  █  █  █  █  █  █",
+            "█  █  █  █  █  █  █",
+            "█  █  █  █  █  █  █",
+            "█  █  █  A1 █  █  N",
+            "█  █  █  █  █  █  █",
+            "N  █  █  █  █  █  N",
+        ]
+        .join("\n");
+        assert_eq!(produced, expected);
     }
 }
