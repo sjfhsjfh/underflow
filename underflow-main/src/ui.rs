@@ -47,6 +47,18 @@ impl Color {
     pub const fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
         Self { r, g, b, a }
     }
+
+    /// Returns a new color with the same RGB components and the given alpha.
+    ///
+    /// `factor` should be in the range [0, 1].
+    pub const fn darken(&self, factor: f32) -> Self {
+        Self {
+            r: self.r * (1. - factor),
+            g: self.g * (1. - factor),
+            b: self.b * (1. - factor),
+            a: self.a,
+        }
+    }
 }
 
 const fn color_u8(r: u8, g: u8, b: u8, a: u8) -> Color {

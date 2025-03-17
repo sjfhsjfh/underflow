@@ -11,6 +11,7 @@ pub(crate) struct StartScene {
     enter_game: bool,
 
     test_btn: DRectButton,
+    game_config: GameInitConfig,
 }
 
 impl StartScene {
@@ -18,6 +19,10 @@ impl StartScene {
         Self {
             enter_game: false,
             test_btn: DRectButton::new(),
+            game_config: GameInitConfig {
+                size: 5,
+                player_count: 2,
+            },
         }
     }
 }
@@ -26,7 +31,7 @@ impl Scene for StartScene {
     fn next_scene(&self) -> NextScene {
         if self.enter_game {
             debug!("Entering game scene");
-            NextScene::Replace(Box::new(super::GameScene::new(GameInitConfig { size: 5 })))
+            NextScene::Replace(Box::new(super::GameScene::new(self.game_config.clone())))
         } else {
             NextScene::None
         }
