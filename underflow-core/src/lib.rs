@@ -216,9 +216,9 @@ impl Board {
 
 impl Display for Board {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        for row in &self.cells {
-            for cell in row {
-                match cell {
+        for y in 0..self.size() {
+            for x in 0..self.size() {
+                match self.get(x, y) {
                     CellState::Empty => write!(f, "█  ")?,
                     CellState::Neutral => write!(f, "N  ")?,
                     CellState::Occupied(id) => write!(f, "O{} ", id)?,
@@ -264,13 +264,13 @@ mod test {
             .collect::<Vec<String>>()
             .join("\n");
         let expected = [
-            "N  █  █  N  █  █  N",
-            "█  █  █  █  █  █  █",
-            "█  █  █  █  █  █  █",
-            "█  █  █  █  █  █  █",
-            "█  █  █  A1 █  █  N",
-            "█  █  █  █  █  █  █",
             "N  █  █  █  █  █  N",
+            "█  █  █  █  █  █  █",
+            "█  █  █  █  █  █  █",
+            "N  █  █  █  A1 █  █",
+            "█  █  █  █  █  █  █",
+            "█  █  █  █  █  █  █",
+            "N  █  █  █  N  █  N",
         ]
         .join("\n");
         assert_eq!(produced, expected);
