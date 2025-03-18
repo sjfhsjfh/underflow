@@ -50,9 +50,32 @@ impl FlowServer {
             return Err(FlowError::Recurrence);
         }
         self.board.set(x, y, state);
-        if self.phase.is_flowing() {
-            self.history.push(&self.board);
+        Ok(())
+    }
+
+    fn checked_flow(&mut self, idx: u8, is_x: bool, positive: bool) -> FlowResponse {
+        if idx >= self.board.size {
+            return Err(FlowError::IndexOutOfRange);
         }
+        let mut dry_run = self.board.clone();
+        if is_x {
+            if !dry_run.flow_x(idx, positive) {
+                return Err(FlowError::BlockedByAnchor);
+            }
+        } else {
+            if !dry_run.flow_y(idx, positive) {
+                return Err(FlowError::BlockedByAnchor);
+            }
+        }
+        if self.history.is_recurrence(&dry_run) {
+            return Err(FlowError::Recurrence);
+        }
+        if is_x {
+            self.board.flow_x(idx, positive);
+        } else {
+            self.board.flow_y(idx, positive);
+        }
+        self.history.push(&self.board);
         Ok(())
     }
 
@@ -74,12 +97,8 @@ impl FlowServer {
                 positive,
             } => {
                 self.check_player(player)?;
-                if y >= self.board.size {
-                    return Err(FlowError::IndexOutOfRange);
-                }
-                if !self.board.flow_x(y, positive) {
-                    return Err(FlowError::BlockedByAnchor);
-                }
+                self.expect_phase(GamePhase::Flowing)?;
+                self.checked_flow(y, true, positive)?;
                 self.next_player();
             }
             FlowCommand::FlowY {
@@ -88,12 +107,8 @@ impl FlowServer {
                 positive,
             } => {
                 self.check_player(player)?;
-                if x >= self.board.size {
-                    return Err(FlowError::IndexOutOfRange);
-                }
-                if !self.board.flow_y(x, positive) {
-                    return Err(FlowError::BlockedByAnchor);
-                }
+                self.expect_phase(GamePhase::Flowing)?;
+                self.checked_flow(x, false, positive)?;
                 self.next_player();
             }
             FlowCommand::SetAnchor { player, x, y } => {
@@ -113,6 +128,10 @@ impl FlowServer {
                 }
                 self.checked_set(x, y, CellState::Occupied(player))?;
                 self.last_player();
+                if self.board.is_ready() {
+                    self.phase = GamePhase::Flowing;
+                    self.history.push(&self.board);
+                }
             }
         }
         Ok(())

@@ -27,7 +27,7 @@ pub struct GameData {
 
 pub(crate) struct GameScene {
     data: GameData,
-    current_player_filled: bool,
+    touch_locked: bool,
 }
 
 impl GameScene {
@@ -46,7 +46,7 @@ impl GameScene {
                 server: FlowServer::new(config),
                 config,
             },
-            current_player_filled: false,
+            touch_locked: false,
         }
     }
 
@@ -91,13 +91,15 @@ impl Scene for GameScene {
 
     fn render(&mut self, ui: &mut Ui) -> anyhow::Result<()> {
         self.draw_board(ui);
+        // TODO: Make it false after the transition animation
+        self.touch_locked = false;
         Ok(())
     }
 
     fn touch(&mut self, touch: &macroquad::prelude::Touch) -> anyhow::Result<bool> {
         match self.data.server.phase {
             GamePhase::Filling => {
-                if self.current_player_filled {
+                if self.touch_locked {
                     return Ok(false);
                 }
                 for x in 0..self.data.config.size {
@@ -107,13 +109,12 @@ impl Scene for GameScene {
                             if self.get_cell(x, y) != CellState::Empty {
                                 return Ok(false);
                             }
-                            // TODO: add this and make it false after the transition animation
-                            // self.current_player_filled = true;
                             let res = self.data.server.handle(FlowCommand::SetOccupied {
                                 player: self.current_player(),
                                 x,
                                 y,
                             });
+                            self.touch_locked = true;
                             match res {
                                 Err(e) => debug!("{}", e),
                                 _ => {}
