@@ -1,5 +1,8 @@
+pub mod history;
+pub mod protocol;
+pub mod server;
+
 use std::collections::HashMap;
-use std::error::Error;
 use std::fmt;
 use std::fmt::{Display, Formatter};
 
@@ -11,25 +14,6 @@ pub enum CellState {
     Occupied(u8),
     Anchored(u8),
 }
-
-#[derive(Debug, PartialEq, Eq)]
-#[repr(u8)]
-pub enum FlowError {
-    BlockedByAnchor,
-    OutOfBounds,
-}
-
-impl Display for FlowError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            FlowError::BlockedByAnchor => write!(f, "Blocked by anchor")?,
-            FlowError::OutOfBounds => write!(f, "Argument out of bounds")?,
-        }
-        Ok(())
-    }
-}
-
-impl Error for FlowError {}
 
 impl CellState {
     pub fn is_anchor(&self) -> bool {
@@ -45,15 +29,12 @@ impl CellState {
     }
 }
 
-pub enum BoardStat {
-    NotReady,
-    Ready {
-        /// Player id -> occupied cell count
-        player_stat: HashMap<u8, u8>,
+pub struct BoardStat {
+    /// Player id -> occupied cell count
+    pub player_stat: HashMap<u8, u8>,
 
-        /// This may be useful for history indexing since its monotonic decreasing
-        total_occupied: usize,
-    },
+    /// This may be useful for history indexing since its monotonic decreasing
+    pub total_unoccupied: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -83,6 +64,14 @@ impl Board {
         self.cells[x as usize][y as usize] = state;
     }
 
+    /// No size check
+    pub fn is_occupied(&self, x: u8, y: u8) -> bool {
+        match self.get(x, y) {
+            CellState::Empty | CellState::Neutral => true,
+            _ => false,
+        }
+    }
+
     #[inline]
     /// Check if all the cells in this row are not anchored, no size check
     pub fn can_flow_x(&self, y: u8) -> bool {
@@ -95,13 +84,10 @@ impl Board {
         !(0..self.size).any(|y| self.get(x, y).is_anchor())
     }
 
-    /// Flow the cells in the x-axis, if this row is anchored, or the row is out of bound, return `Err`
-    pub fn flow_x(&mut self, y: u8, positive: bool) -> Result<(), FlowError> {
+    /// Flow the cells in the x-axis, if this row is anchored return `false`, no size check.
+    pub fn flow_x(&mut self, y: u8, positive: bool) -> bool {
         if !self.can_flow_x(y) {
-            return Err(FlowError::BlockedByAnchor);
-        }
-        if y >= self.size {
-            return Err(FlowError::OutOfBounds);
+            return false;
         }
         if positive {
             for x in (0..self.size).rev() {
@@ -122,16 +108,13 @@ impl Board {
                 }
             }
         }
-        Ok(())
+        true
     }
 
-    /// Flow the cells in the y-axis, if this column is anchored, or the column is out of bound, return `Err`
-    pub fn flow_y(&mut self, x: u8, positive: bool) -> Result<(), FlowError> {
+    /// Flow the cells in the y-axis, if this row is anchored return `false`, no size check.
+    pub fn flow_y(&mut self, x: u8, positive: bool) -> bool {
         if !self.can_flow_y(x) {
-            return Err(FlowError::BlockedByAnchor);
-        }
-        if x >= self.size {
-            return Err(FlowError::OutOfBounds);
+            return false;
         }
         if positive {
             for y in (0..self.size).rev() {
@@ -152,7 +135,7 @@ impl Board {
                 }
             }
         }
-        Ok(())
+        true
     }
 
     /// Fill the board to make the empty cell count is a multiple of player count
@@ -186,23 +169,24 @@ impl Board {
         self.size
     }
 
-    pub fn stat(&self) -> BoardStat {
+    pub fn stat(&self) -> Option<BoardStat> {
         if !self.is_ready() {
-            return BoardStat::NotReady;
+            return None;
         }
         let mut player_stat = HashMap::new();
-        let mut total_occupied = 0;
+        let mut total_unoccupied = 0;
         self.cells.iter().flatten().for_each(|&cell| {
             if let Some(player) = cell.occupied_then_id() {
                 let stat = player_stat.entry(player).or_insert(0);
                 *stat += 1;
-                total_occupied += 1;
+            } else {
+                total_unoccupied += 1;
             }
         });
-        BoardStat::Ready {
+        Some(BoardStat {
             player_stat,
-            total_occupied,
-        }
+            total_unoccupied,
+        })
     }
 
     /// Check if the board is ready to start the game, i.e. no empty cell
@@ -248,11 +232,11 @@ mod test {
         assert_eq!(board.get(3, 3), CellState::Occupied(1));
         assert!(board.can_flow_x(3));
         assert!(board.can_flow_y(3));
-        assert_eq!(board.flow_x(3, true), Ok(()));
+        assert_eq!(board.flow_x(3, true), true);
         assert_eq!(board.get(3, 3), CellState::Empty);
         assert_eq!(board.get(4, 3), CellState::Occupied(1));
-        assert_eq!(board.flow_y(4, true), Ok(()));
-        assert_eq!(board.flow_y(4, false), Ok(()));
+        assert_eq!(board.flow_y(4, true), true);
+        assert_eq!(board.flow_y(4, false), true);
         assert_eq!(board.get(4, 3), CellState::Occupied(1));
         board.set(4, 3, CellState::Anchored(1));
         assert!(!board.can_flow_x(3));
