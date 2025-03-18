@@ -5,6 +5,10 @@ pub struct BoardHistory {
 }
 
 impl BoardHistory {
+    pub fn new() -> Self {
+        Self { data: Vec::new() }
+    }
+
     pub fn is_recurrence(&self, board: &Board) -> bool {
         if let Some(stat) = board.stat() {
             if let Some(collection) = self.data.get(stat.total_unoccupied) {

@@ -1,14 +1,12 @@
-use macroquad::{
-    math::{Rect, vec2},
-    prelude::debug,
-    ui::hash,
-    window::screen_width,
+use macroquad::{math::Rect, prelude::debug};
+use underflow_core::{
+    CellState,
+    protocol::{FlowCommand, GamePhase},
+    server::{FlowServer, FlowServerConfig},
 };
-use underflow_core::Board;
-
-use crate::ui::{Color, Ui, button::DRectButton};
 
 use super::{NextScene, Scene};
+use crate::ui::{Color, Ui};
 
 static COLOR_MAP: [Color; 6] = [
     Color::new(1.0, 0.0, 0.0, 1.0),
@@ -22,66 +20,34 @@ static COLOR_MAP: [Color; 6] = [
 const BOARD_UI_SIZE: f32 = 0.6;
 const GUTTER_RATIO: f32 = 0.15;
 
-#[derive(Clone)]
-pub struct GameInitConfig {
-    pub player_count: u8,
-    pub size: u8,
-}
-
 pub struct GameData {
-    pub board: Board,
-    pub config: GameInitConfig,
-    pub pause_btn: DRectButton,
-}
-
-impl GameData {
-    #[inline]
-    pub fn next_player(&self, current: u8) -> u8 {
-        (current + 1) % self.config.player_count
-    }
-}
-
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
-enum GameState {
-    #[default]
-    Filling,
-    Operating,
-}
-
-impl GameState {
-    pub fn is_filling(&self) -> bool {
-        matches!(self, Self::Filling)
-    }
+    pub server: FlowServer,
+    pub config: FlowServerConfig,
 }
 
 pub(crate) struct GameScene {
     data: GameData,
-
-    state: GameState,
     current_player_filled: bool,
-    current_player: u8,
 }
 
 impl GameScene {
-    pub fn new(config: GameInitConfig) -> Self {
+    fn current_player(&self) -> u8 {
+        self.data.server.current_player
+    }
+
+    fn get_cell(&self, x: u8, y: u8) -> CellState {
+        self.data.server.board.get(x, y)
+    }
+
+    pub fn new(config: FlowServerConfig) -> Self {
         // Initialize fields here
         Self {
             data: GameData {
-                board: Board::init(config.player_count, config.size),
+                server: FlowServer::new(config),
                 config,
-
-                pause_btn: DRectButton::new(),
             },
-            state: GameState::default(),
             current_player_filled: false,
-            current_player: 0,
         }
-    }
-
-    #[inline]
-    pub fn next_player(&mut self) {
-        self.current_player = self.data.next_player(self.current_player);
-        self.current_player_filled = false;
     }
 
     #[inline]
@@ -103,15 +69,13 @@ impl GameScene {
     pub fn draw_board(&self, ui: &mut Ui) {
         for x in 0..self.data.config.size {
             for y in 0..self.data.config.size {
-                let cell = self.data.board.get(x, y);
+                let cell = self.data.server.board.get(x, y);
                 let r = self.cell_rect(x, y);
                 let color = match cell {
-                    underflow_core::CellState::Empty => Color::new(0.9, 0.9, 0.9, 1.0),
-                    underflow_core::CellState::Occupied(player) => COLOR_MAP[player as usize],
-                    underflow_core::CellState::Anchored(player) => {
-                        COLOR_MAP[player as usize].darken(0.3)
-                    }
-                    underflow_core::CellState::Neutral => Color::new(0.5, 0.5, 0.5, 1.0),
+                    CellState::Empty => Color::new(0.9, 0.9, 0.9, 1.0),
+                    CellState::Occupied(player) => COLOR_MAP[player as usize],
+                    CellState::Anchored(player) => COLOR_MAP[player as usize].darken(0.3),
+                    CellState::Neutral => Color::new(0.5, 0.5, 0.5, 1.0),
                 };
                 ui.fill_rect(r, color);
             }
@@ -131,8 +95,8 @@ impl Scene for GameScene {
     }
 
     fn touch(&mut self, touch: &macroquad::prelude::Touch) -> anyhow::Result<bool> {
-        match self.state {
-            GameState::Filling => {
+        match self.data.server.phase {
+            GamePhase::Filling => {
                 if self.current_player_filled {
                     return Ok(false);
                 }
@@ -140,23 +104,26 @@ impl Scene for GameScene {
                     for y in 0..self.data.config.size {
                         let r = self.cell_rect(x, y);
                         if r.contains(touch.position) {
-                            if self.data.board.get(x, y) != underflow_core::CellState::Empty {
+                            if self.get_cell(x, y) != CellState::Empty {
                                 return Ok(false);
                             }
-                            self.current_player_filled = true;
-                            self.data.board.set(
+                            // TODO: add this and make it false after the transition animation
+                            // self.current_player_filled = true;
+                            let res = self.data.server.handle(FlowCommand::SetOccupied {
+                                player: self.current_player(),
                                 x,
                                 y,
-                                underflow_core::CellState::Occupied(self.current_player),
-                            );
-                            // Remove this
-                            self.next_player();
+                            });
+                            match res {
+                                Err(e) => debug!("{}", e),
+                                _ => {}
+                            }
                             return Ok(true);
                         }
                     }
                 }
             }
-            GameState::Operating => {
+            GamePhase::Flowing => {
                 // Implement touch handling logic here
             }
         }

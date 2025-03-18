@@ -46,7 +46,9 @@ pub enum FlowError {
 impl std::fmt::Display for FlowError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            FlowError::AlreadyOccupied => write!(f, "Already occupied")?,
             FlowError::BlockedByAnchor => write!(f, "Blocked by anchor")?,
+            FlowError::IndexOutOfRange => write!(f, "Index out of range")?,
             _ => todo!(),
         }
         Ok(())

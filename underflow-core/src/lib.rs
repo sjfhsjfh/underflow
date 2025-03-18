@@ -67,8 +67,8 @@ impl Board {
     /// No size check
     pub fn is_occupied(&self, x: u8, y: u8) -> bool {
         match self.get(x, y) {
-            CellState::Empty | CellState::Neutral => true,
-            _ => false,
+            CellState::Empty | CellState::Neutral => false,
+            _ => true,
         }
     }
 

@@ -1,9 +1,7 @@
 use macroquad::{camera::set_camera, math::Rect, prelude::debug};
+use underflow_core::server::FlowServerConfig;
 
-use crate::{
-    scenes::game::GameInitConfig,
-    ui::{Color, Ui, button::DRectButton},
-};
+use crate::ui::{Color, Ui, button::DRectButton};
 
 use super::{NextScene, Scene};
 
@@ -11,7 +9,7 @@ pub(crate) struct StartScene {
     enter_game: bool,
 
     test_btn: DRectButton,
-    game_config: GameInitConfig,
+    game_config: FlowServerConfig,
 }
 
 impl StartScene {
@@ -19,9 +17,9 @@ impl StartScene {
         Self {
             enter_game: false,
             test_btn: DRectButton::new(),
-            game_config: GameInitConfig {
-                size: 5,
-                player_count: 2,
+            game_config: FlowServerConfig {
+                size: 7,
+                player_count: 3,
             },
         }
     }

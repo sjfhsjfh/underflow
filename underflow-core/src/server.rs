@@ -4,15 +4,31 @@ use crate::{
     protocol::{FlowCommand, FlowError, FlowResponse, GamePhase},
 };
 
+#[derive(Debug, Clone, Copy)]
+pub struct FlowServerConfig {
+    pub player_count: u8,
+    pub size: u8,
+}
+
 pub struct FlowServer {
-    board: Board,
-    current_player: u8,
+    pub board: Board,
+    pub current_player: u8,
     history: BoardHistory,
-    phase: GamePhase,
+    pub phase: GamePhase,
     player_count: u8,
 }
 
 impl FlowServer {
+    pub fn new(config: FlowServerConfig) -> Self {
+        Self {
+            board: Board::init(config.player_count, config.size),
+            current_player: 0,
+            history: BoardHistory::new(),
+            phase: GamePhase::Filling,
+            player_count: config.player_count,
+        }
+    }
+
     fn check_player(&self, player: u8) -> FlowResponse {
         if self.current_player != player {
             return Err(FlowError::NotYourTurn);
