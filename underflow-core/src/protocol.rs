@@ -49,7 +49,9 @@ impl std::fmt::Display for FlowError {
             FlowError::AlreadyOccupied => write!(f, "Already occupied")?,
             FlowError::BlockedByAnchor => write!(f, "Blocked by anchor")?,
             FlowError::IndexOutOfRange => write!(f, "Index out of range")?,
-            _ => todo!(),
+            FlowError::InvalidPhase => write!(f, "Invalid phase")?,
+            FlowError::NotYourTurn => write!(f, "Not your turn")?,
+            FlowError::Recurrence => write!(f, "Recurrence")?,
         }
         Ok(())
     }
