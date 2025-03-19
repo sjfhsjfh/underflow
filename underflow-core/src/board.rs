@@ -1,4 +1,4 @@
-use crate::protocol::UnderflowError::{self, AlreadyOccupied, IndexOutOfBounds, InvalidPlayerId};
+use crate::protocol::UnderflowError::{self, AlreadyOccupied, AlreadyPlacedAnchor, IndexOutOfBounds, InvalidPlayerId};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::{self, Display, Formatter};
@@ -21,6 +21,13 @@ impl CellState {
     pub fn occupied_then_id(&self) -> Option<u8> {
         match self {
             CellState::Occupied(player) => Some(*player),
+            _ => None,
+        }
+    }
+    
+    pub fn anchored_then_id(&self) -> Option<u8> {
+        match self { 
+            CellState::Anchored(player) => Some(*player),
             _ => None,
         }
     }
@@ -81,6 +88,13 @@ impl Board {
     /// No size check
     pub fn set(&mut self, x: u8, y: u8, state: CellState) {
         self.cells[x as usize][y as usize] = state;
+    }
+    
+    pub fn has_anchored_with_id(&self, id: u8) -> bool {
+        self.cells
+            .iter()
+            .flatten()
+            .any(|&cell| {matches!(cell, CellState::Anchored(id))})
     }
 
     #[inline]
@@ -192,12 +206,19 @@ impl Board {
             return Err(IndexOutOfBounds);
         }
         if let CellState::Occupied(_) = self.get(x, y) {
-            return Err(AlreadyOccupied)
+            return Err(AlreadyOccupied);
         } else if let CellState::Anchored(_) = self.get(x, y) {
-            
+            return Err(AlreadyOccupied);
         }
         // We assume that the id of players is incremental, beginning from 0.
         if let Some(id) = cell.occupied_then_id() {
+            if id >= self.player_count {
+                return Err(InvalidPlayerId);
+            }
+        } else if let Some(id) = cell.anchored_then_id() {
+            if self.has_anchored_with_id(id) {
+                return Err(AlreadyPlacedAnchor);
+            }
             if id >= self.player_count {
                 return Err(InvalidPlayerId);
             }

@@ -21,9 +21,15 @@ pub enum CommandContent {
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, PartialEq, Debug)]
 #[repr(u8)]
 pub enum ResponseContent {
+    /// Indicates that game is over. Announces winner in field 0.
     GameOver(u8),
+    /// Indicates that phase has changed. Appoints who to play next in field 0.
     PhaseChange(u8),
+    /// Indicates that the play is valid and does not have any other effect. 
+    /// Also appoints who to play next in field 0.
     Valid(u8),
+    /// Indicates that one player has been eliminated.
+    /// The id of eliminated player stores in field 0, and the id to play next in 1.
     Elimination(u8, u8),
 }
 
@@ -34,10 +40,12 @@ pub enum UnderflowError {
     InvalidPlayerId,
     // This category is about errors on flowing.
     BlockedByAnchor,
-    // This is about errors on placing blocks in the first phase.
+    // This is about errors on placing blocks.
     AlreadyOccupied,
+    AlreadyPlacedAnchor,
     // And this is about errors on changing the place of anchor.
-    InvalidChange,
+    InvalidChangeSource,
+    InvalidChangeDestination,
 }
 
 impl Display for UnderflowError {
