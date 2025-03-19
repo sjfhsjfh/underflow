@@ -11,9 +11,9 @@ const SERVER_ID: u8 = u8::MAX;
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, PartialEq, Debug)]
 #[repr(u8)]
 pub enum CommandContent {
-    FlowX(u8, bool),
-    FlowY(u8, bool),
-    Put(CellState, u8, u8),
+    FlowX(u8, u8, bool),
+    FlowY(u8, u8, bool),
+    Put(u8, CellState, u8, u8),
     Exchange(u8, u8, u8, u8, u8),
 }
 
@@ -38,6 +38,7 @@ pub enum UnderflowError {
     // This category is general error.
     IndexOutOfBounds,
     InvalidPlayerId,
+    NotYourTurn,
     // This category is about errors on flowing.
     BlockedByAnchor,
     // This is about errors on placing blocks.

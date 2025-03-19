@@ -94,7 +94,7 @@ impl Board {
         self.cells
             .iter()
             .flatten()
-            .any(|&cell| {matches!(cell, CellState::Anchored(id))})
+            .any(|&cell| {cell == CellState::Anchored(id)})
     }
 
     #[inline]

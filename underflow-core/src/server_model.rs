@@ -5,7 +5,7 @@ use crate::protocol::CommandContent::{self, *};
 use crate::protocol::ResponseContent::{GameOver, Valid, PhaseChange, Elimination};
 use crate::protocol::{ResponseContent, UnderflowError};
 use std::collections::VecDeque;
-use crate::protocol::UnderflowError::InvalidChangeSource;
+use crate::protocol::UnderflowError::{IndexOutOfBounds, InvalidChangeSource, NotYourTurn};
 
 /// An abstraction of server that only runs game process.
 #[allow(dead_code)]
@@ -81,22 +81,37 @@ impl ServerModel {
     #[allow(dead_code)]
     pub fn process_command(&mut self, command: CommandContent) -> Result<ResponseContent, UnderflowError> {
         match command {
-            CommandContent::FlowX(x, pos) => {
+            CommandContent::FlowX(id, x, pos) => {
+                if *self.player_queue.front().unwrap() != id {
+                    return Err(NotYourTurn);
+                }
                 self.board.flow_x(x, pos)?;
                 Ok(self.judge())
             }
-            CommandContent::FlowY(y, pos) => {
+            CommandContent::FlowY(id, y, pos) => {
+                if *self.player_queue.front().unwrap() != id {
+                    return Err(NotYourTurn);
+                }
                 self.board.flow_y(y, pos)?;
                 Ok(self.judge())
             }
-            CommandContent::Put(cell, x, y) => {
+            CommandContent::Put(id, cell, x, y) => {
+                if *self.player_queue.front().unwrap() != id {
+                    return Err(NotYourTurn);
+                }
                 self.board.put(cell, x, y)?;
                 Ok(self.judge())
             }
-            #[allow(unused_variables)]
             CommandContent::Exchange(id, src_x, src_y, dst_x, dst_y) => { 
+                let size = self.board.size();
+                if src_x >= size || src_y >= size || dst_x >= size || dst_y >= size {
+                    return Err(IndexOutOfBounds);
+                }
                 let src = self.board.get(src_x, src_y);
                 let dst = self.board.get(dst_x, dst_y);
+                if *self.player_queue.front().unwrap() != id {
+                    return Err(NotYourTurn);
+                }
                 if let CellState::Anchored(src_id) = src {
                     if src_id != id {
                         return Err(InvalidChangeSource);
@@ -118,7 +133,7 @@ impl ServerModel {
 
 #[cfg(test)]
 mod test {
-    use crate::protocol::UnderflowError::{AlreadyOccupied, BlockedByAnchor};
+    use crate::protocol::UnderflowError::{AlreadyOccupied, AlreadyPlacedAnchor, BlockedByAnchor};
     use super::*;
 
     #[test]
@@ -126,17 +141,18 @@ mod test {
         let mut server = ServerModel::new(2, 2);
         let stat = server.get_stat();
         assert_eq!(stat, BoardStat::NotReady);
-        assert_eq!(server.process_command(Put(CellState::Occupied(0), 0, 0)).unwrap(), Valid(1));
+        assert_eq!(server.process_command(Put(0, CellState::Occupied(0), 0, 0)).unwrap(), Valid(1));
         
         // shall fail
-        assert_eq!(server.process_command(Put(CellState::Occupied(1), 0, 0)), Err(AlreadyOccupied));
+        assert_eq!(server.process_command(Put(1, CellState::Occupied(1), 0, 0)), Err(AlreadyOccupied));
+        assert_eq!(server.process_command(Put(0, CellState::Occupied(0), 1, 0)), Err(NotYourTurn));
         assert_eq!(server.player_queue.front(), Some(&1));
         
-        server.process_command(Put(CellState::Occupied(1), 0, 1)).unwrap();
-        server.process_command(Put(CellState::Occupied(0), 1, 0)).unwrap();
+        server.process_command(Put(1, CellState::Occupied(1), 0, 1)).unwrap();
+        server.process_command(Put(0, CellState::Occupied(0), 1, 0)).unwrap();
         
         //shall end the phase of placing self blocks.
-        let res = server.process_command(Put(CellState::Occupied(1), 1, 1)).unwrap();
+        let res = server.process_command(Put(1, CellState::Occupied(1), 1, 1)).unwrap();
         
         assert_eq!(res, ResponseContent::PhaseChange(0));
         let stat = server.get_stat();
@@ -146,8 +162,8 @@ mod test {
         let (dict, _) = stat.unwrap();
         assert_eq!(dict.get(&0).unwrap(), &2);
         
-        server.process_command(FlowX(1, true)).unwrap();
-        let res = server.process_command(FlowX(1, true)).unwrap();
+        server.process_command(FlowX(0, 1, true)).unwrap();
+        let res = server.process_command(FlowX(1, 1, true)).unwrap();
         assert_eq!(res, ResponseContent::GameOver(0));
     }
     
@@ -157,12 +173,16 @@ mod test {
         let xs: [u8; 9] = [0, 0, 0, 1, 1, 1, 2, 2, 2];
         let ys: [u8; 9] = [0, 1, 2, 1, 2, 0, 2, 0, 1];
         for (i, (x, y)) in xs.into_iter().zip(ys.into_iter()).enumerate() {
-            server.process_command(Put(CellState::Occupied(i as u8 % 3), x, y)).unwrap();
+            let id = i as u8 % 3;
+            server.process_command(Put(id, CellState::Occupied(id), x, y)).unwrap();
         }
-        assert_eq!(server.process_command(Put(CellState::Anchored(0), 0, 0)), Err(AlreadyOccupied));
-        server.process_command(FlowX(0, true)).unwrap();
-        server.process_command(Put(CellState::Anchored(0), 0, 0)).unwrap();
-        assert_eq!(server.process_command(FlowX(0, true)), Err(BlockedByAnchor));
+        
+        assert_eq!(server.process_command(Put(0, CellState::Anchored(0), 0, 0)), Err(AlreadyOccupied));
+        server.process_command(FlowX(0, 0, true)).unwrap();
+        server.process_command(Put(1, CellState::Anchored(0), 0, 0)).unwrap();
+        assert_eq!(server.process_command(FlowX(2, 0, true)), Err(BlockedByAnchor));
+        server.process_command(FlowX(2, 1, true)).unwrap();
+        assert_eq!(server.process_command(Put(0, CellState::Anchored(0), 0, 1)), Err(AlreadyPlacedAnchor));
     }
     
     #[test]
