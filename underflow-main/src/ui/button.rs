@@ -13,8 +13,11 @@ use super::{Matrix, Ui, Vector, colors::WHITE};
 
 #[derive(Clone, Copy)]
 pub struct RectButton {
+    /// Points of the rectangle in screen space.
     pts: Option<[Vec2; 4]>,
-    id: Option<u64>,
+
+    /// Related touch ID if the button is being touched.
+    touch_id: Option<u64>,
 }
 
 impl Default for RectButton {
@@ -27,12 +30,12 @@ impl RectButton {
     pub fn new() -> Self {
         Self {
             pts: None,
-            id: None,
+            touch_id: None,
         }
     }
 
     pub fn touching(&self) -> bool {
-        self.id.is_some()
+        self.touch_id.is_some()
     }
 
     pub fn contains(&self, pos: Vec2) -> bool {
@@ -67,19 +70,19 @@ impl RectButton {
         match touch.phase {
             TouchPhase::Started => {
                 if inside {
-                    self.id = Some(touch.id);
+                    self.touch_id = Some(touch.id);
                 }
             }
             TouchPhase::Moved | TouchPhase::Stationary => {
-                if self.id == Some(touch.id) && !inside {
-                    self.id = None;
+                if self.touch_id == Some(touch.id) && !inside {
+                    self.touch_id = None;
                 }
             }
             TouchPhase::Cancelled => {
-                self.id = None;
+                self.touch_id = None;
             }
             TouchPhase::Ended => {
-                if self.id.take() == Some(touch.id) && inside {
+                if self.touch_id.take() == Some(touch.id) && inside {
                     return true;
                 }
             }
@@ -218,7 +221,7 @@ impl DRectButton {
         if self
             .start_time
             .as_ref()
-            .map_or(false, |it| t > *it + Self::TIME)
+            .is_some_and(|it| t > *it + Self::TIME)
         {
             self.start_time = None;
         }

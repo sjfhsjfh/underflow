@@ -9,6 +9,7 @@ pub(crate) struct StartScene {
     enter_game: bool,
 
     test_btn: DRectButton,
+    start_game_btn: DRectButton,
     game_config: FlowServerConfig,
 }
 
@@ -17,6 +18,7 @@ impl StartScene {
         Self {
             enter_game: false,
             test_btn: DRectButton::new(),
+            start_game_btn: DRectButton::new(),
             game_config: FlowServerConfig {
                 size: 7,
                 player_count: 3,
@@ -36,14 +38,16 @@ impl Scene for StartScene {
     }
 
     fn render(&mut self, ui: &mut Ui) -> anyhow::Result<()> {
+        let time_now = macroquad::time::get_time();
         let cam = ui.camera();
         let top = -1. / cam.zoom.y;
         set_camera(&cam);
 
         let test_r = Rect::new(-0.5, -0.5 * top, 1., top);
-        self.test_btn.build(ui, 0., test_r, |ui, path| {
-            ui.fill_path(&path, Color::new(0.3, 0.3, 0.3, 1.));
-        });
+        self.test_btn
+            .build(ui, time_now as f32, test_r, |ui, path| {
+                ui.fill_path(&path, Color::new(0.3, 0.3, 0.3, 1.));
+            });
 
         Ok(())
     }

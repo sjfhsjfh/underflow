@@ -15,7 +15,6 @@ use utils::screen_to_world;
 
 static SCENE_STACK: Lazy<Mutex<Vec<Box<dyn Scene + Send + Sync>>>> =
     Lazy::new(|| Mutex::new(vec![]));
-static CONFIG: Lazy<Mutex<config::Config>> = Lazy::new(|| Mutex::new(config::Config::default()));
 
 #[macroquad::main("Underflow")]
 async fn main() {
