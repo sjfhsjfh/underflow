@@ -29,7 +29,7 @@ impl Scene for StartScene {
     fn next_scene(&self) -> NextScene {
         if self.enter_game {
             debug!("Entering game scene");
-            NextScene::Replace(Box::new(super::GameScene::new(self.game_config.clone())))
+            NextScene::Replace(Box::new(super::GameScene::new(self.game_config)))
         } else {
             NextScene::None
         }

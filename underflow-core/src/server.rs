@@ -62,10 +62,8 @@ impl FlowServer {
             if !dry_run.flow_x(idx, positive) {
                 return Err(FlowError::BlockedByAnchor);
             }
-        } else {
-            if !dry_run.flow_y(idx, positive) {
-                return Err(FlowError::BlockedByAnchor);
-            }
+        } else if !dry_run.flow_y(idx, positive) {
+            return Err(FlowError::BlockedByAnchor);
         }
         if self.history.is_recurrence(&dry_run) {
             return Err(FlowError::Recurrence);

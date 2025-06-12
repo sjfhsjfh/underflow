@@ -28,4 +28,10 @@ impl BoardHistory {
     }
 }
 
+impl Default for BoardHistory {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 // TODO: tests

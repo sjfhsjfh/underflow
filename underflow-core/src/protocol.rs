@@ -14,11 +14,11 @@ pub enum GamePhase {
 
 impl GamePhase {
     pub fn is_filling(&self) -> bool {
-        return matches!(self, Self::Filling);
+        matches!(self, Self::Filling)
     }
 
     pub fn is_flowing(&self) -> bool {
-        return matches!(self, Self::Flowing);
+        matches!(self, Self::Flowing)
     }
 }
 

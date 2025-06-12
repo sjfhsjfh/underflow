@@ -115,9 +115,8 @@ impl Scene for GameScene {
                                 y,
                             });
                             self.touch_locked = true;
-                            match res {
-                                Err(e) => debug!("{}", e),
-                                _ => {}
+                            if let Err(e) = res {
+                                debug!("{}", e)
                             }
                             return Ok(true);
                         }
