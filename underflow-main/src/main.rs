@@ -1,53 +1,73 @@
+use comui::{
+    component::Component,
+    layout::{Layout, LayoutBuilder},
+    scene::SceneManager,
+    utils::Transform,
+    window::Window,
+};
+use macroquad::{
+    miniquad::EventHandler,
+    prelude::info,
+    window::{clear_background, next_frame, screen_height, screen_width},
+};
+use nalgebra::Matrix3;
+
+use crate::{input::InputHandler, scenes::startup::StartupScene};
+
+mod components;
 mod config;
 mod input;
 mod scenes;
-mod tween;
-mod ui;
-pub mod utils;
+mod utils;
 
-use input::{TOUCHES, on_frame};
-use macroquad::prelude::*;
-use once_cell::sync::Lazy;
-use scenes::{NextScene, Scene};
-use tokio::sync::Mutex;
-use ui::Ui;
-use utils::screen_to_world;
+fn macroquad_config() -> macroquad::window::Conf {
+    macroquad::window::Conf {
+        high_dpi: true,
+        sample_count: 4,
+        window_title: "Underflow".to_string(),
+        ..Default::default()
+    }
+}
 
-static SCENE_STACK: Lazy<Mutex<Vec<Box<dyn Scene + Send + Sync>>>> =
-    Lazy::new(|| Mutex::new(vec![]));
+struct Main {
+    scene_manager: SceneManager,
+}
 
-#[macroquad::main("Underflow")]
+impl Default for Main {
+    fn default() -> Self {
+        Self {
+            scene_manager: SceneManager {
+                scene_stack: vec![Box::new(StartupScene::default())],
+            },
+        }
+    }
+}
+
+impl Layout for Main {
+    fn components(&mut self) -> Vec<(Transform, &mut dyn Component)> {
+        let (w, h) = (screen_width(), screen_height());
+        LayoutBuilder::new()
+            .at_rect((w / 2.0, h / 2.0, w, -h), &mut self.scene_manager)
+            .build()
+    }
+}
+
+#[macroquad::main(macroquad_config)]
 async fn main() {
-    SCENE_STACK
-        .lock()
-        .await
-        .push(Box::new(scenes::StartScene::new()));
+    let mut handler = InputHandler::default();
+    let mut main_view = Main::default();
+    let mut window = Window::default();
     loop {
-        clear_background(WHITE);
-        let mut scene_stack = SCENE_STACK.lock().await;
-        let current_scene = scene_stack.last_mut().unwrap();
-        let mut ui = Ui::new(None);
-        on_frame();
-        TOUCHES.with(|t| t.borrow().0.clone()).retain_mut(|touch| {
-            match current_scene.touch(&screen_to_world(&ui, touch)) {
-                Ok(val) => !val,
-                Err(err) => {
-                    warn!("failed to handle touch: {:?}", err);
-                    false
-                }
-            }
-        });
-        current_scene.render(&mut ui).unwrap();
-        match current_scene.next_scene() {
-            NextScene::None => {}
-            NextScene::Pop => {
-                scene_stack.pop();
-            }
-            NextScene::Replace(new_scene) => {
-                scene_stack.pop();
-                scene_stack.push(new_scene);
+        handler.update();
+        let touches = std::mem::take(&mut handler.touches);
+        for touch in &touches {
+            if let Err(e) = main_view.touch(touch) {
+                info!("Error handling touch: {:?}", e);
             }
         }
+        clear_background(macroquad::color::WHITE);
+        main_view.render(&Matrix3::identity(), &mut window);
+        window.update();
         next_frame().await
     }
 }
