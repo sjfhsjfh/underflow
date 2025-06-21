@@ -1,4 +1,5 @@
 use comui::{
+    component::Component,
     components::button::QuadButton,
     layout::{Layout, LayoutBuilder},
     shading::IntoShading,
@@ -21,6 +22,14 @@ pub struct RoundedButton {
 }
 
 impl RoundedButton {
+    pub fn back_btn() -> Self {
+        Self {
+            radius: 0.5,
+            color: color::BLACK,
+            inner: QuadButton::default(),
+        }
+    }
+
     pub fn with_color(mut self, color: Color) -> Self {
         self.color = color;
         self
@@ -45,7 +54,10 @@ impl Default for RoundedButton {
 impl Layout for RoundedButton {
     fn components(&mut self) -> Vec<(Transform, &mut dyn comui::component::Component)> {
         LayoutBuilder::new()
-            .at_rect((0.0, 0.0, 1.0 - self.radius, 1.0), &mut self.inner)
+            .at_rect(
+                (0.0, 0.0, 1.0 - self.radius, 1.0),
+                &mut self.inner as &mut dyn Component,
+            )
             .build()
     }
 

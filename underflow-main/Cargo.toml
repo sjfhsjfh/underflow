@@ -8,10 +8,15 @@ version.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
-comui.workspace = true
+comui = { workspace = true }
+fluent.workspace = true
+fluent-syntax = { workspace = true }
+lru.workspace = true
 lyon = { workspace = true }
 macroquad = { workspace = true }
 nalgebra = { workspace = true }
 once_cell = { workspace = true }
 tokio = { workspace = true }
 underflow-core = { workspace = true }
+underflow-l10n = { workspace = true }
+unic-langid.workspace = true
