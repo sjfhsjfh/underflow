@@ -28,6 +28,8 @@ fn macroquad_config() -> macroquad::window::Conf {
         high_dpi: true,
         sample_count: 4,
         window_title: "Underflow".to_string(),
+        window_width: 1440,
+        window_height: 1024,
         ..Default::default()
     }
 }

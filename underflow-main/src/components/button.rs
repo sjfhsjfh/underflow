@@ -1,6 +1,6 @@
 use comui::{
     component::Component,
-    components::button::QuadButton,
+    components::{button::QuadButton, label::Label},
     layout::{Layout, LayoutBuilder},
     shading::IntoShading,
     utils::Transform,
@@ -13,6 +13,8 @@ use lyon::{
 use macroquad::color::{self, Color};
 use nalgebra::{Point2, Vector2};
 
+use crate::{colors, tl};
+
 /// Asserts the target region is a rectangle
 pub struct RoundedButton {
     pub inner: QuadButton,
@@ -22,14 +24,6 @@ pub struct RoundedButton {
 }
 
 impl RoundedButton {
-    pub fn back_btn() -> Self {
-        Self {
-            radius: 0.5,
-            color: color::BLACK,
-            inner: QuadButton::default(),
-        }
-    }
-
     pub fn with_color(mut self, color: Color) -> Self {
         self.color = color;
         self
@@ -90,5 +84,85 @@ impl Layout for RoundedButton {
             builder.build()
         };
         target.fill_path(&path, self.color.into_shading(), 1.0);
+    }
+}
+
+pub struct LabeledButton {
+    label_component: Label,
+    raw_size: f32,
+    pub inner: RoundedButton,
+    l10n_id: String,
+}
+
+impl LabeledButton {
+    pub fn back_btn() -> Self {
+        Self::new_with_id(
+            "back",
+            |label| {
+                label
+                    .with_font_size(48.)
+                    .with_line_height(48.)
+                    .with_texture_align((0.5, 0.6))
+                    .with_color(color::WHITE)
+            },
+            |button| {
+                button
+                    .with_color(colors::color_secondary())
+                    .with_radius(0.5)
+            },
+        )
+    }
+
+    pub fn new_with_id(
+        id: impl AsRef<str>,
+        label_f: impl FnOnce(Label) -> Label,
+        button_f: impl FnOnce(RoundedButton) -> RoundedButton,
+    ) -> Self {
+        let l10n_id = id.as_ref().to_string();
+        let label_component = label_f(Label::new(tl!(l10n_id.clone())));
+        Self {
+            raw_size: label_component.font_size,
+            label_component,
+            inner: button_f(RoundedButton::default()),
+            l10n_id,
+        }
+    }
+
+    pub fn triggered(&mut self) -> bool {
+        if self.inner.inner.triggered {
+            self.inner.inner.triggered = false;
+            true
+        } else {
+            false
+        }
+    }
+}
+
+impl Layout for LabeledButton {
+    fn before_render(&mut self, _: &Transform, _: &mut Window) {
+        self.label_component.text = tl!(self.l10n_id.clone()).into_owned();
+        let size = 1.0
+            - 0.04 * {
+                let t = if self.inner.inner.pressed {
+                    self.inner.inner.press_start_at.elapsed().as_secs_f32() / 0.15
+                } else {
+                    1.0 - self.inner.inner.release_start_at.elapsed().as_secs_f32() / 0.1
+                }
+                .clamp(0.0, 1.0);
+                const C1: f32 = 1.70158;
+                const C3: f32 = C1 + 1.0;
+                1.0 + C3 * (t - 1.0).powi(3) + C1 * (t - 1.0).powi(2)
+            };
+        self.label_component.font_size = self.raw_size * size;
+    }
+
+    fn components(&mut self) -> Vec<(Transform, &mut dyn Component)> {
+        LayoutBuilder::new()
+            .at_rect((0.0, 0.0, 1.0, 1.0), &mut self.inner as &mut dyn Component)
+            .at_rect(
+                (0.0, 0.0, 1.0, 1.0),
+                &mut self.label_component as &mut dyn Component,
+            )
+            .build()
     }
 }

@@ -1,31 +1,31 @@
 use comui::{
     component::Component,
+    components::DataComponent,
     layout::{Layout, LayoutBuilder},
     scene::{NextScene, Scene},
     utils::Transform,
+    window::Window,
 };
 use underflow_l10n::LANGS;
 
 use crate::{
-    components::{button::RoundedButton, data_bar::DataBar, popup_select::PopUpSelect},
+    components::{button::LabeledButton, data_bar::DataBar, single_choice::SingleChoice},
+    config::{get_config_mut, sync_config},
     tl,
 };
 
 pub struct SettingScene {
-    backbtn: RoundedButton,
-    lang_bar: DataBar<String, PopUpSelect<String>>,
+    backbtn: LabeledButton,
+    lang_bar: DataBar<String, SingleChoice>,
 }
 
 impl Default for SettingScene {
     fn default() -> Self {
         Self {
-            backbtn: RoundedButton::back_btn(),
+            backbtn: LabeledButton::back_btn(),
             lang_bar: DataBar::new(
                 tl!("language").to_string(),
-                PopUpSelect {
-                    selected: 0,
-                    options: LANGS.iter().map(|lang| lang.to_string()).collect(),
-                },
+                SingleChoice::new(LANGS.iter().map(|lang| lang.to_string()).collect(), 0),
             ),
         }
     }
@@ -45,14 +45,21 @@ impl Layout for SettingScene {
             .build()
     }
 
-    fn before_render(&mut self, _: &Transform, _: &mut comui::window::Window) {
+    fn before_render(&mut self, _: &Transform, _: &mut Window) {
         self.lang_bar.name.text = tl!("language").to_string();
+    }
+
+    fn after_render(&mut self, _: &Transform, _: &mut Window) {
+        if self.lang_bar.data.updated() {
+            get_config_mut().language = Some(self.lang_bar.data.get_data().clone());
+            sync_config();
+        }
     }
 }
 
 impl Scene for SettingScene {
     fn next_scene(&mut self) -> Option<NextScene> {
-        if self.backbtn.inner.triggered {
+        if self.backbtn.triggered() {
             Some(NextScene::Pop)
         } else {
             None

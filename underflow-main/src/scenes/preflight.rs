@@ -5,16 +5,16 @@ use comui::{
     utils::Transform,
 };
 
-use crate::components::button::RoundedButton;
+use crate::components::button::LabeledButton;
 
 pub struct PreflightScene {
-    back_btn: RoundedButton,
+    back_btn: LabeledButton,
 }
 
 impl Default for PreflightScene {
     fn default() -> Self {
         Self {
-            back_btn: RoundedButton::back_btn(),
+            back_btn: LabeledButton::back_btn(),
         }
     }
 }
@@ -32,7 +32,7 @@ impl Layout for PreflightScene {
 
 impl Scene for PreflightScene {
     fn next_scene(&mut self) -> Option<NextScene> {
-        if self.back_btn.inner.triggered {
+        if self.back_btn.triggered() {
             Some(NextScene::Pop)
         } else {
             None

@@ -4,7 +4,6 @@ pub static mut CONFIG: Option<Config> = None;
 
 #[derive(Debug, Clone)]
 pub(crate) struct Config {
-    pub player_count: u8,
     pub language: Option<String>,
 }
 
@@ -41,7 +40,6 @@ pub fn sync_config() {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            player_count: 2,
             language: Some(FALLBACK_LANG.to_string()),
         }
     }
