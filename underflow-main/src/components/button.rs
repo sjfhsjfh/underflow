@@ -2,18 +2,12 @@ use comui::{
     component::Component,
     components::{button::QuadButton, label::Label},
     layout::{Layout, LayoutBuilder},
-    shading::IntoShading,
     utils::Transform,
     window::Window,
 };
-use lyon::{
-    math::Box2D,
-    path::{Path, Winding, builder::BorderRadii},
-};
 use macroquad::color::{self, Color};
-use nalgebra::{Point2, Vector2};
 
-use crate::{colors, tl};
+use crate::{colors, components::rounded_rect::RoundedRect, tl};
 
 /// Asserts the target region is a rectangle
 pub struct RoundedButton {
@@ -47,11 +41,9 @@ impl Default for RoundedButton {
 
 impl Layout for RoundedButton {
     fn components(&mut self) -> Vec<(Transform, &mut dyn comui::component::Component)> {
+        let rect = (0.0, 0.0, 1.0 - self.radius, 1.0);
         LayoutBuilder::new()
-            .at_rect(
-                (0.0, 0.0, 1.0 - self.radius, 1.0),
-                &mut self.inner as &mut dyn Component,
-            )
+            .at_rect(rect, &mut self.inner as &mut dyn Component)
             .build()
     }
 
@@ -68,25 +60,15 @@ impl Layout for RoundedButton {
                 const C3: f32 = C1 + 1.0;
                 1.0 + C3 * (t - 1.0).powi(3) + C1 * (t - 1.0).powi(2)
             };
-        let bottom_left = tr.transform_point(&(Point2::new(-0.5, 0.5) * size));
-        let top_right = tr.transform_point(&(Point2::new(0.5, -0.5) * size));
-        let height = tr.transform_vector(&Vector2::new(0.0, 1.0)).norm();
-        let path = {
-            let mut builder = Path::builder();
-            builder.add_rounded_rectangle(
-                &Box2D::new(
-                    (bottom_left.x, bottom_left.y).into(),
-                    (top_right.x, top_right.y).into(),
-                ),
-                &BorderRadii::new(self.radius * height),
-                Winding::Positive,
-            );
-            builder.build()
-        };
-        target.fill_path(&path, self.color.into_shading(), 1.0);
+        RoundedRect::builder()
+            .with_fill_color(self.color)
+            .with_radius_rel(0.0, 0.5)
+            .build()
+            .render(&(tr * Transform::new_scaling(size)), target);
     }
 }
 
+#[allow(dead_code)]
 pub struct LabeledButton {
     label_component: Label,
     raw_size: f32,
@@ -141,19 +123,20 @@ impl LabeledButton {
 impl Layout for LabeledButton {
     fn before_render(&mut self, _: &Transform, _: &mut Window) {
         self.label_component.text = tl!(self.l10n_id.clone()).into_owned();
-        let size = 1.0
-            - 0.04 * {
-                let t = if self.inner.inner.pressed {
-                    self.inner.inner.press_start_at.elapsed().as_secs_f32() / 0.15
-                } else {
-                    1.0 - self.inner.inner.release_start_at.elapsed().as_secs_f32() / 0.1
-                }
-                .clamp(0.0, 1.0);
-                const C1: f32 = 1.70158;
-                const C3: f32 = C1 + 1.0;
-                1.0 + C3 * (t - 1.0).powi(3) + C1 * (t - 1.0).powi(2)
-            };
-        self.label_component.font_size = self.raw_size * size;
+        // ! TODO: memory issue here!!!
+        // let size = 1.0
+        //     - 0.04 * {
+        //         let t = if self.inner.inner.pressed {
+        //             self.inner.inner.press_start_at.elapsed().as_secs_f32() / 0.15
+        //         } else {
+        //             1.0 - self.inner.inner.release_start_at.elapsed().as_secs_f32() / 0.1
+        //         }
+        //         .clamp(0.0, 1.0);
+        //         const C1: f32 = 1.70158;
+        //         const C3: f32 = C1 + 1.0;
+        //         1.0 + C3 * (t - 1.0).powi(3) + C1 * (t - 1.0).powi(2)
+        //     };
+        // self.label_component.font_size = self.raw_size * size;
     }
 
     fn components(&mut self) -> Vec<(Transform, &mut dyn Component)> {

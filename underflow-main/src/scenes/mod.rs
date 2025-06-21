@@ -1,3 +1,4 @@
+pub mod game;
 pub mod preflight;
 pub mod setting;
 pub mod startup;

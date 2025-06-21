@@ -29,10 +29,26 @@ impl FlowServer {
         }
     }
 
-    fn check_player(&self, player: u8) -> FlowResponse {
+    fn current_player_alive(&self) -> bool {
+        self.board
+            .cells
+            .iter()
+            .flat_map(|c| c.iter())
+            .any(|&cell| cell == CellState::Occupied(self.current_player))
+    }
+
+    fn check_player(&mut self, player: u8) -> FlowResponse {
+        while !self.current_player_alive() {
+            if self.current_player == player {
+                return Err(FlowError::YouAreDead);
+            }
+            self.next_player();
+        }
+
         if self.current_player != player {
             return Err(FlowError::NotYourTurn);
         }
+
         Ok(())
     }
 
