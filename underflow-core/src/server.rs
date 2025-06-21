@@ -31,6 +31,10 @@ impl FlowServer {
         }
     }
 
+    pub fn player_count(&self) -> u8 {
+        self.player_count
+    }
+
     fn check_player(&self, player: u8) -> FlowResponse {
         if self.current_player != player {
             return Err(FlowError::NotYourTurn);
