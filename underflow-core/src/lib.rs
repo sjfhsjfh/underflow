@@ -15,6 +15,13 @@ pub enum CellState {
     Anchored(u8),
 }
 
+#[derive(Debug, PartialEq, Eq)]
+#[repr(u8)]
+pub enum FlowError {
+    BlockedByAnchor,
+    OutOfBounds,
+}
+
 impl CellState {
     pub fn is_anchor(&self) -> bool {
         matches!(self, CellState::Anchored(_))

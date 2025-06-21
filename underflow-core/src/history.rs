@@ -1,5 +1,6 @@
 use crate::Board;
 
+#[derive(Clone)]
 pub struct BoardHistory {
     data: Vec<Vec<Board>>,
 }

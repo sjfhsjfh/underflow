@@ -10,6 +10,7 @@ pub struct FlowServerConfig {
     pub size: u8,
 }
 
+#[derive(Clone)]
 pub struct FlowServer {
     pub board: Board,
     pub current_player: u8,
@@ -17,6 +18,7 @@ pub struct FlowServer {
     pub phase: GamePhase,
     player_count: u8,
 }
+
 
 impl FlowServer {
     pub fn new(config: FlowServerConfig) -> Self {
