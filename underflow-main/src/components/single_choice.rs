@@ -1,28 +1,43 @@
 use comui::{
     component::Component,
-    components::{DataComponent, button::QuadButton},
+    components::{DataComponent, label::Align},
     layout::{Layout, LayoutBuilder},
     utils::Transform,
 };
 
+use crate::colors;
+
+use super::button::LabeledButton;
+
 pub struct SingleChoice {
     choices: Vec<String>,
     selected: usize,
-    btn: QuadButton,
+    btn: LabeledButton,
 }
 
 impl SingleChoice {
+    const BUTTON_LABEL_SIZE: f32 = 60.0;
+
     pub fn new(choices: Vec<String>, selected: usize) -> Self {
         Self {
             choices,
             selected,
-            btn: QuadButton::default(),
+            btn: LabeledButton::new_with_id("switch", |l| {
+                l
+                .with_align(Align::Center)
+                .with_color(colors::WHITE)
+                .with_texture_align((0.5, 0.6))
+                .with_line_height(Self::BUTTON_LABEL_SIZE)
+                .with_font_size(Self::BUTTON_LABEL_SIZE)
+            }, |b| {
+                b.with_color(colors::color_secondary()).with_radius(0.5f32)
+            }),
         }
     }
 
     pub fn updated(&mut self) -> bool {
-        if self.btn.triggered {
-            self.btn.triggered = false;
+        if self.btn.triggered() {
+            //self.btn.inner.inner.triggered = false;
             self.selected = (self.selected + 1) % self.choices.len();
             true
         } else {

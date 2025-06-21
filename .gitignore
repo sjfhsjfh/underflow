@@ -1,5 +1,6 @@
 # Rust
 /target
+.cargo
 
 # Mac OS
 .DS_Store

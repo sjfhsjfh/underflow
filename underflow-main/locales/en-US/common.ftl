@@ -5,3 +5,4 @@ quit = QUIT
 back = BACK
 
 language = Language
+switch = Switch

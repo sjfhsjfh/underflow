@@ -5,3 +5,4 @@ quit = 退出
 back = 返回
 
 language = 语言
+switch = 切换
