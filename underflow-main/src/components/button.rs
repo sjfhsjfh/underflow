@@ -251,6 +251,7 @@ impl Layout for CancelButton {
         builder.line_to(origin);
         builder.line_to(-vert2);
         builder.line_to(origin);
+        builder.end(false);
         let path = builder.build().transformed(&UTransform::new(*tr));
         let (thickness, color) = self.stroke;
         target.set_stroke_options(|options| options.with_line_join(lyon::path::LineJoin::Round));
