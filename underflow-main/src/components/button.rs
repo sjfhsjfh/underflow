@@ -2,12 +2,19 @@ use comui::{
     component::Component,
     components::{button::QuadButton, label::Label},
     layout::{Layout, LayoutBuilder},
+    shading::IntoShading,
     utils::Transform,
     window::Window,
 };
-use macroquad::color::{self, Color};
+use lyon::{math::Point, path::Path};
+use macroquad::color::Color;
 
-use crate::{colors, components::rounded_rect::RoundedRect, tl};
+use crate::{
+    colors,
+    components::rounded_rect::{RoundedRect, RoundedRectBuilder},
+    tl,
+    utils::UTransform,
+};
 
 /// Asserts the target region is a rectangle
 pub struct RoundedButton {
@@ -33,7 +40,7 @@ impl Default for RoundedButton {
     fn default() -> Self {
         Self {
             radius: 0.2,
-            color: color::BLACK,
+            color: colors::BLACK,
             inner: QuadButton::default(),
         }
     }
@@ -41,7 +48,7 @@ impl Default for RoundedButton {
 
 impl Layout for RoundedButton {
     fn components(&mut self) -> Vec<(Transform, &mut dyn comui::component::Component)> {
-        let rect = (0.0, 0.0, 1.0 - self.radius, 1.0);
+        let rect = (0.0, 0.0, 1.0 - 0.5 * self.radius, 1.0);
         LayoutBuilder::new()
             .at_rect(rect, &mut self.inner as &mut dyn Component)
             .build()
@@ -62,7 +69,7 @@ impl Layout for RoundedButton {
             };
         RoundedRect::builder()
             .with_fill_color(self.color)
-            .with_radius_rel(0.0, 0.5)
+            .with_radius_rel(0.0, self.radius)
             .build()
             .render(&(tr * Transform::new_scaling(size)), target);
     }
@@ -85,7 +92,7 @@ impl LabeledButton {
                     .with_font_size(48.)
                     .with_line_height(48.)
                     .with_texture_align((0.5, 0.6))
-                    .with_color(color::WHITE)
+                    .with_color(colors::WHITE)
             },
             |button| {
                 button
@@ -147,5 +154,107 @@ impl Layout for LabeledButton {
                 &mut self.label_component as &mut dyn Component,
             )
             .build()
+    }
+}
+
+pub struct CancelButton {
+    container: Option<RoundedRect>,
+    inner: QuadButton,
+    /// Stroke for the cross
+    stroke: (f32, Color),
+    size: f32,
+}
+
+#[must_use = "Call `build` to finalize the cancel button configuration"]
+pub struct CancelButtonBuilder {
+    container: Option<RoundedRectBuilder>,
+    stroke: (f32, Color),
+    size: f32,
+}
+
+impl Default for CancelButtonBuilder {
+    fn default() -> Self {
+        Self {
+            container: None,
+            stroke: (2.0, colors::BLACK),
+            size: 0.3,
+        }
+    }
+}
+
+impl CancelButtonBuilder {
+    pub fn build(self) -> CancelButton {
+        let container = self.container.map(|b| b.build());
+        CancelButton {
+            container,
+            inner: QuadButton::default(),
+            stroke: self.stroke,
+            size: self.size,
+        }
+    }
+
+    pub fn with_container(mut self, container: RoundedRectBuilder) -> Self {
+        self.container = Some(container);
+        self
+    }
+
+    pub fn with_stroke(mut self, stroke: (f32, Color)) -> Self {
+        self.stroke = stroke;
+        self
+    }
+
+    pub fn with_size(mut self, size: f32) -> Self {
+        self.size = size;
+        self
+    }
+}
+
+impl CancelButton {
+    pub fn builder() -> CancelButtonBuilder {
+        Default::default()
+    }
+
+    pub fn canceled(&mut self) -> bool {
+        if self.inner.triggered {
+            self.inner.triggered = false;
+            true
+        } else {
+            false
+        }
+    }
+}
+
+impl Layout for CancelButton {
+    fn components(&mut self) -> Vec<(Transform, &mut dyn Component)> {
+        LayoutBuilder::new()
+            .at_rect((0.0, 0.0, 1.0, 1.0), &mut self.inner as &mut dyn Component)
+            .build()
+    }
+
+    fn before_render(&mut self, tr: &Transform, target: &mut Window) {
+        if let Some(cont) = self.container.as_mut() {
+            cont.render(tr, target);
+        }
+    }
+
+    fn after_render(&mut self, tr: &Transform, target: &mut Window) {
+        let mut builder = Path::builder();
+        let origin = Point::origin();
+        let vert1 = (0.5 * self.size, 0.5 * self.size).into();
+        let vert2 = (-0.5 * self.size, 0.5 * self.size).into();
+        builder.begin(origin);
+        builder.line_to(vert1);
+        builder.line_to(origin);
+        builder.line_to(vert2);
+        builder.line_to(origin);
+        builder.line_to(-vert1);
+        builder.line_to(origin);
+        builder.line_to(-vert2);
+        builder.line_to(origin);
+        let path = builder.build().transformed(&UTransform::new(*tr));
+        let (thickness, color) = self.stroke;
+        target.set_stroke_options(|options| options.with_line_join(lyon::path::LineJoin::Round));
+        target.stroke_path(&path, color.into_shading(), 1.0, thickness);
+        target.set_stroke_options(|_| Default::default());
     }
 }

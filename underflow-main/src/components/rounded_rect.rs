@@ -1,6 +1,5 @@
 use comui::{component::Component, shading::IntoShading, utils::Transform, window::Window};
 use lyon::{
-    geom::euclid::Point2D,
     math::Box2D,
     path::{Path, Winding, builder::BorderRadii},
 };
@@ -81,7 +80,7 @@ impl Component for RoundedRect {
         let tr_rest = UTransform::new(
             tr * Transform::new_nonuniform_scaling(&Vector2::new(1.0 / abs_w, 1.0 / abs_h)),
         );
-        let radius = abs_w * self.radius_rel_w + abs_h + self.radius_rel_h + self.radius_abs;
+        let radius = abs_w * self.radius_rel_w + abs_h * self.radius_rel_h + self.radius_abs;
         let mut builder = Path::builder();
         let corner = (-0.5 * abs_w, -0.5 * abs_h).into();
         builder.add_rounded_rectangle(
@@ -91,15 +90,10 @@ impl Component for RoundedRect {
         );
         let path = builder.build().transformed(&tr_rest);
         if let Some(fill_color) = self.fill_color {
-            target.fill_path(&path, fill_color.into_shading(), fill_color.a);
+            target.fill_path(&path, fill_color.into_shading(), 1.0);
         }
         if let Some((stroke_color, thickness)) = self.stroke {
-            target.stroke_path(
-                &path,
-                stroke_color.a,
-                thickness,
-                stroke_color.into_shading(),
-            );
+            target.stroke_path(&path, stroke_color.into_shading(), 1.0, thickness);
         }
     }
 }
