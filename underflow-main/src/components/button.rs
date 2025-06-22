@@ -49,9 +49,7 @@ impl Default for RoundedButton {
 impl Layout for RoundedButton {
     fn components(&mut self) -> Vec<(Transform, &mut dyn comui::component::Component)> {
         let rect = (0.0, 0.0, 1.0 - 0.5 * self.radius, 1.0);
-        LayoutBuilder::new()
-            .at_rect(rect, &mut self.inner as &mut dyn Component)
-            .build()
+        LayoutBuilder::new().at_rect(rect, &mut self.inner).build()
     }
 
     fn before_render(&mut self, tr: &Transform, target: &mut Window) {
@@ -84,13 +82,13 @@ pub struct LabeledButton {
 }
 
 impl LabeledButton {
-    pub fn back_btn() -> Self {
+    fn top_left_btn_with_id(id: impl AsRef<str>) -> Self {
         Self::new_with_id(
-            "back",
+            id.as_ref(),
             |label| {
                 label
-                    .with_font_size(48.)
-                    .with_line_height(48.)
+                    .with_font_size(42.)
+                    .with_line_height(42.)
                     .with_texture_align((0.5, 0.6))
                     .with_color(colors::WHITE)
             },
@@ -100,6 +98,14 @@ impl LabeledButton {
                     .with_radius(0.5)
             },
         )
+    }
+
+    pub fn back_btn() -> Self {
+        Self::top_left_btn_with_id("back")
+    }
+
+    pub fn pause_btn() -> Self {
+        Self::top_left_btn_with_id("pause")
     }
 
     pub fn new_with_id(
@@ -148,11 +154,8 @@ impl Layout for LabeledButton {
 
     fn components(&mut self) -> Vec<(Transform, &mut dyn Component)> {
         LayoutBuilder::new()
-            .at_rect((0.0, 0.0, 1.0, 1.0), &mut self.inner as &mut dyn Component)
-            .at_rect(
-                (0.0, 0.0, 1.0, 1.0),
-                &mut self.label_component as &mut dyn Component,
-            )
+            .at_rect((0.0, 0.0, 1.0, 1.0), &mut self.inner)
+            .at_rect((0.0, 0.0, 1.0, 1.0), &mut self.label_component)
             .build()
     }
 }
@@ -227,7 +230,7 @@ impl CancelButton {
 impl Layout for CancelButton {
     fn components(&mut self) -> Vec<(Transform, &mut dyn Component)> {
         LayoutBuilder::new()
-            .at_rect((0.0, 0.0, 1.0, 1.0), &mut self.inner as &mut dyn Component)
+            .at_rect((0.0, 0.0, 1.0, 1.0), &mut self.inner)
             .build()
     }
 

@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Mutex};
 use tracing::warn;
 use unic_langid::LanguageIdentifier;
 
-use crate::{fallback_langid, FALLBACK_LANG, LANG_IDENTS};
+use crate::{FALLBACK_LANG, LANG_IDENTS, fallback_langid};
 
 pub struct L10nGlobal {
     pub lang_map: HashMap<LanguageIdentifier, usize>,

@@ -16,7 +16,9 @@ lyon = { workspace = true }
 macroquad = { workspace = true }
 nalgebra = { workspace = true }
 once_cell = { workspace = true }
+rand.workspace = true
 tokio = { workspace = true }
+underflow-ai = { workspace = true }
 underflow-core = { workspace = true }
 underflow-l10n = { workspace = true }
 unic-langid.workspace = true

@@ -72,10 +72,10 @@ impl Layout for StartupScene {
 
     fn components(&mut self) -> Vec<(Transform, &mut dyn Component)> {
         LayoutBuilder::new()
-            .at_rect((0.0, 0.28, 0.6, 0.3), &mut self.title as &mut dyn Component)
+            .at_rect((0.0, 0.28, 0.6, 0.3), &mut self.title)
             .at_rect(
                 (0.0, 0.05, Self::BUTTON_WIDTH, Self::BUTTON_HEIGHT),
-                &mut self.start_btn as &mut dyn Component,
+                &mut self.start_btn,
             )
             .at_rect(
                 (
@@ -84,7 +84,7 @@ impl Layout for StartupScene {
                     Self::BUTTON_WIDTH,
                     Self::BUTTON_HEIGHT,
                 ),
-                &mut self.settings_btn as &mut dyn Component,
+                &mut self.settings_btn,
             )
             .at_rect(
                 (
@@ -93,7 +93,7 @@ impl Layout for StartupScene {
                     Self::BUTTON_WIDTH,
                     Self::BUTTON_HEIGHT,
                 ),
-                &mut self.quit_btn as &mut dyn Component,
+                &mut self.quit_btn,
             )
             .build()
     }

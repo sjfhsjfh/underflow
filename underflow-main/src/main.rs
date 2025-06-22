@@ -52,10 +52,7 @@ impl Layout for Main {
     fn components(&mut self) -> Vec<(Transform, &mut dyn Component)> {
         let (w, h) = (screen_width(), screen_height());
         LayoutBuilder::new()
-            .at_rect(
-                (w / 2.0, h / 2.0, w, -h),
-                &mut self.scene_manager as &mut dyn Component,
-            )
+            .at_rect((w / 2.0, h / 2.0, w, -h), &mut self.scene_manager)
             .build()
     }
 }

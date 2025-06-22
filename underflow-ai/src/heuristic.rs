@@ -1,7 +1,5 @@
-use std::{
-    collections::{HashMap, HashSet},
-};
-use underflow_core::{server::FlowServer, Board, CellState};
+use std::collections::{HashMap, HashSet};
+use underflow_core::{Board, CellState, server::FlowServer};
 
 // ========================
 // HEURISTIC FUNCTION

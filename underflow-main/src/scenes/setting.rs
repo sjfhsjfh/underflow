@@ -53,14 +53,8 @@ impl Default for SettingScene {
 impl Layout for SettingScene {
     fn components(&mut self) -> Vec<(Transform, &mut dyn Component)> {
         LayoutBuilder::new()
-            .at_rect(
-                super::BACK_BTN_RECT,
-                &mut self.backbtn as &mut dyn Component,
-            )
-            .at_rect(
-                (0.0, 0.0, 0.8, 0.15),
-                &mut self.lang_bar as &mut dyn Component,
-            )
+            .at_rect(super::BACK_BTN_RECT, &mut self.backbtn)
+            .at_rect((0.0, 0.0, 0.8, 0.15), &mut self.lang_bar)
             .build()
     }
 

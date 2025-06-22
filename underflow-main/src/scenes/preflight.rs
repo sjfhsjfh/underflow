@@ -1,11 +1,12 @@
 use comui::{
     component::Component,
-    components::label::Align,
+    components::{DataComponent, label::Align},
     layout::{Layout, LayoutBuilder},
     scene::{NextScene, Scene},
     utils::Transform,
 };
 use macroquad::color::Color;
+use underflow_ai::Difficulty;
 
 use crate::{
     colors,
@@ -14,14 +15,14 @@ use crate::{
         rounded_rect::RoundedRect,
         single_choice::SingleChoice,
     },
+    scenes::game::GameScene,
     tl,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Player {
     Human(Color),
-    // AI(Color, Difficulty)
-    AI(Color, u8),
+    AI(Color, Difficulty),
 }
 
 impl Player {
@@ -38,6 +39,17 @@ impl Player {
             Player::AI(c, _) => *c,
         }
     }
+
+    pub fn match_id(&self, id: &str) -> bool {
+        match self {
+            Player::Human(_) => id == tl!("player"),
+            Player::AI(_, difficulty) => match difficulty {
+                Difficulty::Easy => id == tl!("ai-easy"),
+                Difficulty::Medium => id == tl!("ai-medium"),
+                Difficulty::Hard => id == tl!("ai-hard"),
+            },
+        }
+    }
 }
 
 pub struct PlayerCard {
@@ -51,6 +63,7 @@ impl PlayerCard {
     const CANCEL_BTN_MARGIN: f32 = 0.1;
 
     const FONT_SIZE: f32 = 36.0;
+    const PLAYER_OPTIONS: [&str; 4] = ["player", "ai-easy", "ai-medium", "ai-hard"];
 
     pub fn new(player: Player) -> Self {
         Self {
@@ -64,7 +77,7 @@ impl PlayerCard {
                 .with_stroke((2.0, player.color().with_alpha(0.8)))
                 .build(),
             difficulty_selector: SingleChoice::new(
-                ["player", "ai-easy", "ai-medium", "ai-hard"]
+                Self::PLAYER_OPTIONS
                     .iter()
                     .map(|k| tl!(*k).into_owned())
                     .collect(),
@@ -94,7 +107,23 @@ impl Layout for PlayerCard {
             .with_stroke(self.player.color().with_alpha(0.6), 1.5)
             .build()
             .render(tr, target);
+
+        let id = self.difficulty_selector.get_data().as_str();
+        if !self.player.match_id(id) {
+            if id == tl!("player") {
+                self.player = Player::Human(self.player.color());
+            } else if id == tl!("ai-easy") {
+                self.player = Player::AI(self.player.color(), Difficulty::Easy);
+            } else if id == tl!("ai-medium") {
+                self.player = Player::AI(self.player.color(), Difficulty::Medium);
+            } else if id == tl!("ai-hard") {
+                self.player = Player::AI(self.player.color(), Difficulty::Hard);
+            } else {
+                unreachable!();
+            }
+        }
     }
+
     fn components(&mut self) -> Vec<(Transform, &mut dyn Component)> {
         LayoutBuilder::new()
             .at_rect(
@@ -104,12 +133,9 @@ impl Layout for PlayerCard {
                     Self::CANCEL_BTN_SIZE,
                     Self::CANCEL_BTN_SIZE,
                 ),
-                &mut self.cancel_btn as &mut dyn Component,
+                &mut self.cancel_btn,
             )
-            .at_rect(
-                (0.0, -0.1, 0.8, 0.7),
-                &mut self.difficulty_selector as &mut dyn Component,
-            )
+            .at_rect((0.0, -0.1, 0.8, 0.7), &mut self.difficulty_selector)
             .build()
     }
 }
@@ -204,7 +230,9 @@ impl Layout for PreflightScene {
             .find(|(_, canceled)| *canceled)
             .map(|(idx, _)| idx)
         {
-            if player_count > Self::MIN_PLAYERS { self.players.remove(idx); }
+            if player_count > Self::MIN_PLAYERS {
+                self.players.remove(idx);
+            }
         }
     }
 
@@ -221,14 +249,8 @@ impl Layout for PreflightScene {
             )
         }
         let builder = LayoutBuilder::new()
-            .at_rect(
-                super::BACK_BTN_RECT,
-                &mut self.back_btn as &mut dyn Component,
-            )
-            .at_rect(
-                (0.2, -0.35, 0.5, 0.15),
-                &mut self.ready_btn as &mut dyn Component,
-            );
+            .at_rect(super::BACK_BTN_RECT, &mut self.back_btn)
+            .at_rect((0.2, -0.35, 0.5, 0.15), &mut self.ready_btn);
         let mut last_idx = 0;
         let builder = self
             .players
@@ -236,13 +258,10 @@ impl Layout for PreflightScene {
             .enumerate()
             .fold(builder, |builder, (idx, card)| {
                 last_idx = idx;
-                builder.at_rect(card_rect(idx), card as &mut dyn Component)
+                builder.at_rect(card_rect(idx), card)
             });
         let builder = if last_idx + 1 < Self::MAX_PLAYERS {
-            builder.at_rect(
-                card_rect(last_idx + 1),
-                &mut self.add_player_btn as &mut dyn Component,
-            )
+            builder.at_rect(card_rect(last_idx + 1), &mut self.add_player_btn)
         } else {
             builder
         };
@@ -256,8 +275,9 @@ impl Scene for PreflightScene {
             return Some(NextScene::Pop);
         }
         if self.ready_btn.triggered() {
-            // return Some(NextScene::Push(...));
-            todo!()
+            return Some(NextScene::Push(Box::new(GameScene::new(
+                self.players.iter().map(|p| p.player).collect(),
+            )) as Box<dyn Scene>));
         }
         None
     }

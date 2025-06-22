@@ -48,7 +48,15 @@ macro_rules! create_bundle {
         bundle
             .add_resource(
                 $crate::FluentResource::try_new(
-                    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/locales/", $locale, "/", $file, ".ftl")).to_owned(),
+                    include_str!(concat!(
+                        env!("CARGO_MANIFEST_DIR"),
+                        "/locales/",
+                        $locale,
+                        "/",
+                        $file,
+                        ".ftl"
+                    ))
+                    .to_owned(),
                 )
                 .unwrap(),
             )

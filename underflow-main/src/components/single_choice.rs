@@ -50,11 +50,8 @@ impl DataComponent<String> for SingleChoice {
 impl Layout for SingleChoice {
     fn components(&mut self) -> Vec<(Transform, &mut dyn Component)> {
         LayoutBuilder::new()
-            .at_rect((0.0, 0.0, 1.0, 1.0), &mut self.btn as &mut dyn Component)
-            .at_rect(
-                (0.0, 0.0, 1.0, 1.0),
-                &mut self.label_component as &mut dyn Component,
-            )
+            .at_rect((0.0, 0.0, 1.0, 1.0), &mut self.btn)
+            .at_rect((0.0, 0.0, 1.0, 1.0), &mut self.label_component)
             .build()
     }
 

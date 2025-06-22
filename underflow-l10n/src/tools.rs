@@ -63,7 +63,10 @@ pub fn check_langfile(path: &str) -> Result<(), Box<dyn Error>> {
 
     if !inconsistent_languages.is_empty() {
         return Err(Box::new(IllegalLanguages {
-            languages: inconsistent_languages.iter().map(|x| x.to_string()).collect(),
+            languages: inconsistent_languages
+                .iter()
+                .map(|x| x.to_string())
+                .collect(),
         }));
     }
 
