@@ -1,4 +1,5 @@
 use rand::prelude::*;
+use rayon::prelude::*;
 use underflow_core::protocol::FlowCommand;
 use underflow_core::protocol::GamePhase;
 use underflow_core::server::*;
@@ -152,14 +153,14 @@ impl HardStrategy {
             return MediumStrategy::filling_move(server, get_valid_commands(server, player_id));
         }
 
-        let depth:i32 = match server.player_count() as i32 {
-            2 => 7,
-            3 => 5,
-            4 => 4,
-            _ => 4, // For more players, reduce depth to avoid long computation
+        let depth: i32 = match server.player_count() as i32 {
+            2 => 3,
+            3 => 3,
+            4 => 3,
+            _ => 3,
         };
 
-        let (_, command) = HardStrategy::maxn_search(server, player_id, depth);
+        let (_, command) = HardStrategy::maxn_search(server, player_id, player_id, depth);
 
         if command.is_none() {
             // If no command found, fallback to medium strategy
@@ -168,38 +169,48 @@ impl HardStrategy {
         Ok(command.unwrap())
     }
 
-    fn maxn_search(server: &FlowServer, player_id: u8, depth: i32) -> (f64, Option<FlowCommand>) {
+    fn maxn_search(
+        server: &FlowServer,
+        player_id: u8,
+        current_player: u8,
+        depth: i32,
+    ) -> (f64, Option<FlowCommand>) {
         if depth <= 0 || server.game_over() {
-            return (heuristic(server, player_id), None);
+            return (heuristic(server, current_player), None);
         }
 
-        let mut best_score = f64::NEG_INFINITY;
-        let mut best_command = None;
-
-        // Get all valid commands for the player
+        // Get all valid commands for the current player
         let commands = get_valid_commands(server, player_id);
 
-        // simulate each command
-        for cmd in commands {
-            let mut new_server = server.clone();
-            if new_server.handle(cmd.clone()).is_err() {
-                continue; // Skip invalid commands
-            }
+        // Simulate each command in parallel
+        let results: Vec<(f64, FlowCommand)> = commands
+            .into_par_iter()
+            .filter_map(|cmd| {
+                let mut new_server = server.clone();
 
-            // dfs
-            let next_player = new_server.current_player;
+                // skip invalid commands
+                if new_server.handle(cmd.clone()).is_err() {
+                    return None;
+                }
 
-            let (score, _) = HardStrategy::maxn_search(&new_server, next_player, depth - 1);
+                // dfs to find the best command
+                let next_player = new_server.current_player;
+                let (score, _) =
+                    HardStrategy::maxn_search(&new_server, next_player, player_id, depth - 1);
+                Some((score, cmd))
+            })
+            .collect();
 
-            if score > best_score {
-                best_score = score;
-                best_command = Some(cmd);
-            }
+        if let Some((best_score, best_cmd)) =
+            results.into_iter().max_by(|(score_a, _), (score_b, _)| {
+                score_a
+                    .partial_cmp(score_b)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
+        {
+            (best_score, Some(best_cmd))
+        } else {
+            (f64::NEG_INFINITY, None) // No valid commands found
         }
-
-        if best_score == f64::NEG_INFINITY {
-            return (f64::NEG_INFINITY, None); // No valid moves
-        }
-        (best_score, best_command)
     }
 }

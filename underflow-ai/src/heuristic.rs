@@ -68,13 +68,13 @@ pub fn calculate_min_moves_to_boundary(
 
     // Calculate the minimum distance to the boundary
     let row_moves = if lock_map.0.contains(&y) {
-        f64::INFINITY
+        size as f64 / 2.0
     } else {
         left_distance.min(right_distance)
     };
 
     let col_moves = if lock_map.1.contains(&x) {
-        f64::INFINITY
+        size as f64 / 2.0
     } else {
         top_distance.min(bottom_distance)
     };
@@ -91,9 +91,10 @@ fn calculate_balance_score(player_strength: &HashMap<u8, f64>, player_id: u8) ->
         .map(|(_, &strength)| strength)
         .collect();
 
-    if other_strength.is_empty() {
+    if other_strength.len() == 0 || other_strength.len() == 1 {
         return 0.0; // No other players, balance score is zero
     }
+    
 
     let mean = other_strength.iter().sum::<f64>() / other_strength.len() as f64;
     let var = other_strength
