@@ -25,7 +25,11 @@ use underflow_core::{
 };
 
 use crate::{
-    colors, components::button::LabeledButton, scenes::preflight::Player, tl, utils::UTransform,
+    colors,
+    components::button::LabeledButton,
+    scenes::{preflight::Player, win::WinScene},
+    tl,
+    utils::UTransform,
 };
 
 pub struct BoardComponent {
@@ -434,6 +438,11 @@ impl Layout for GameScene {
                     println!("Error handling command: {:?}", e);
                 }
             }
+        }
+        if let Some(winner) = self.game_server.winning() {
+            self.next_scene = Some(NextScene::Replace(Box::new(WinScene::new(
+                self.players[winner as usize].color(),
+            ))));
         }
     }
 }

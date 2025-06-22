@@ -14,6 +14,8 @@ ready = READY? START!
 pause = PAUSE
 your-turn = YOUR TURN!
 
+you-win = YOU WIN!
+
 resume = RESUME
 exit-to-menu = EXIT TO MENU
 

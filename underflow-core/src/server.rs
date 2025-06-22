@@ -30,6 +30,23 @@ impl FlowServer {
         }
     }
 
+    pub fn winning(&self) -> Option<u8> {
+        if self.phase != GamePhase::Flowing {
+            return None;
+        }
+        let mut winner = None;
+        for state in self.board.get_cells().iter().flat_map(|c| c.iter()) {
+            if let CellState::Occupied(player) = state {
+                if winner.is_none() {
+                    winner = Some(*player);
+                } else if winner != Some(*player) {
+                    return None; // More than one player has occupied cells
+                }
+            }
+        }
+        winner
+    }
+
     pub fn optimal_size(player_count: u8) -> u8 {
         match player_count {
             2 => 6,

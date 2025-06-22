@@ -279,7 +279,7 @@ impl Scene for PreflightScene {
             return Some(NextScene::Pop);
         }
         if self.ready_btn.triggered() {
-            return Some(NextScene::Push(Box::new(GameScene::new(
+            return Some(NextScene::Replace(Box::new(GameScene::new(
                 self.players.iter().map(|p| p.player).collect(),
             )) as Box<dyn Scene>));
         }
