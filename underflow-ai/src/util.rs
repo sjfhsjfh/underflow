@@ -117,7 +117,7 @@ pub fn get_valid_anchor_positions(board: &Board) -> Vec<(u8, u8)> {
     let size = board.size();
     (0..size)
         .flat_map(|x| (0..size).map(move |y| (x, y)))
-        .filter(|&(x, y)| matches!(board.get(x, y), CellState::Empty | CellState::Neutral))
+        .filter(|&(x, y)| matches!(board.get(x, y), CellState::Neutral))
         .collect()
 }
 

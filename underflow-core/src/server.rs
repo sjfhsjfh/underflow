@@ -153,7 +153,7 @@ impl FlowServer {
         self.current_player %= self.player_count;
     }
 
-    fn next_player_alive(&mut self) {
+    pub fn next_player_alive(&mut self) {
         self.next_player();
         while !self.current_player_alive() {
             self.next_player();

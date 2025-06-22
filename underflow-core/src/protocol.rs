@@ -1,4 +1,4 @@
-#[derive(Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum FlowCommand {
     SetOccupied { player: u8, x: u8, y: u8 },
     SetAnchor { player: u8, x: u8, y: u8 },
