@@ -5,5 +5,5 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-rand = "0.9.1"
+rand.workspace = true
 underflow-core = { path = "../underflow-core" }

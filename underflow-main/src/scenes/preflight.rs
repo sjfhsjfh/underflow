@@ -50,6 +50,10 @@ impl Player {
             },
         }
     }
+
+    pub fn is_human(&self) -> bool {
+        matches!(self, Player::Human(_))
+    }
 }
 
 pub struct PlayerCard {

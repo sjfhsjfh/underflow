@@ -17,6 +17,7 @@ use lyon::{
 use macroquad::{input::TouchPhase, prelude::Touch};
 use nalgebra::Vector2;
 use rand::seq::SliceRandom;
+use underflow_ai::AI;
 use underflow_core::{
     CellState,
     protocol::{FlowCommand, GamePhase},
@@ -326,8 +327,12 @@ pub struct GameScene {
 impl GameScene {
     const HINT_SIZE: f32 = 96.;
 
+    pub fn current_player(&self) -> &Player {
+        &self.players[self.game_server.current_player as usize]
+    }
+
     pub fn current_player_color(&self) -> colors::Color {
-        self.players[self.game_server.current_player as usize].color()
+        self.current_player().color()
     }
 
     pub fn new(mut players: Vec<Player>) -> Self {
@@ -397,7 +402,14 @@ impl Layout for GameScene {
                         && !self.game_server.will_be_recurrence(x, false, true)
                 })
                 .collect(),
-        ]
+        ];
+        if let Player::AI(_, diff) = self.current_player() {
+            // TODO: make this async...
+            let cmd = AI::new(self.game_server.current_player, *diff)
+                .make_move(&mut self.game_server)
+                .unwrap();
+            self.game_server.handle(cmd).unwrap();
+        }
     }
 
     fn components(&mut self) -> Vec<(Transform, &mut dyn Component)> {
@@ -414,12 +426,14 @@ impl Layout for GameScene {
             todo!()
         }
         if let Some(g) = self.board.triggered_grid {
-            let cmd = g.to_cmd(self.game_server.phase, self.game_server.current_player);
-            let res = self.game_server.handle(cmd);
-            if let Err(e) = res {
-                println!("Error handling command: {:?}", e);
-            }
             self.board.triggered_grid = None;
+            if self.current_player().is_human() {
+                let cmd = g.to_cmd(self.game_server.phase, self.game_server.current_player);
+                let res = self.game_server.handle(cmd);
+                if let Err(e) = res {
+                    println!("Error handling command: {:?}", e);
+                }
+            }
         }
     }
 }
