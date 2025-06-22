@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use underflow_core::protocol::{FlowError, *};
 use underflow_core::server::*;
 use underflow_core::*;
@@ -104,7 +105,11 @@ fn get_flowing_commands(server: &FlowServer, player_id: u8) -> Vec<FlowCommand> 
         });
     }
 
+    // 用try_handle_command来过滤掉无效的命令
     commands
+        .into_iter()
+        .filter(|cmd| try_handle_command(server, player_id, cmd.clone()).is_ok())
+        .collect()
 }
 
 /// 获取所有有效的锚点位置
@@ -120,14 +125,42 @@ pub fn get_valid_anchor_positions(board: &Board) -> Vec<(u8, u8)> {
 // UTILITY FUNCTIONS
 // ========================
 
-pub fn evaluate_filling_position(size: i32,x: i32,y: i32) -> i32 {
+pub fn evaluate_filling_position(size: i32, x: i32, y: i32) -> i32 {
     let left_distance = x;
     let right_distance = size - 1 - x;
     let top_distance = y;
     let bottom_distance = size - 1 - y;
-    
+
     let left = left_distance.min(right_distance);
     let top = top_distance.min(bottom_distance);
 
     left.min(top) as i32
+}
+
+pub trait GameOverCheck {
+    fn game_over(&self) -> bool;
+}
+
+impl GameOverCheck for FlowServer {
+    fn game_over(&self) -> bool {
+        // 当棋盘上只剩下一个玩家时, 即为游戏结束
+        // 采用遍历棋盘的方法，检查棋盘上剩余的玩家数量
+        // 如果玩家数量大于1，则游戏未结束
+        let board = &self.board;
+        let size = board.size();
+        let mut players = HashSet::new();
+
+        for x in 0..size {
+            for y in 0..size {
+                // 用hashset来记录玩家
+                if let CellState::Occupied(player_id) = board.get(x, y) {
+                    players.insert(player_id);
+                }
+                if players.len() > 1 {
+                    return false; // 还有多个玩家，游戏未结束
+                }
+            }
+        }
+        true // 只剩下一个玩家，游戏结束
+    }
 }

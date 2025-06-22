@@ -31,6 +31,10 @@ impl FlowServer {
         }
     }
 
+    pub fn player_count(&self) -> u8 {
+        self.player_count
+    }
+
     fn current_player_alive(&self) -> bool {
         self.board
             .cells

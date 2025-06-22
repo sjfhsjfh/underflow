@@ -81,7 +81,7 @@ impl MediumStrategy {
 
         if server.phase == GamePhase::Filling {
             // If in filling phase, use simple strategy
-            return MediumStrategy::filling_move(player_id, server);
+            return MediumStrategy::filling_move(server, commands);
         }
 
         // evaluate each command using the heuristic function
@@ -111,16 +111,13 @@ impl MediumStrategy {
     }
 
     fn filling_move(
-        player_id: u8,
         server: &mut FlowServer,
+        commands: Vec<FlowCommand>,
     ) -> Result<FlowCommand, OperationError> {
         let mut best_score = i32::MIN;
         let mut best_commands = Vec::new();
         let borad = &server.board;
         let size = borad.size();
-
-        // Get all valid commands for the player
-        let commands = get_valid_commands(server, player_id);
 
         // Choose the best command
         for cmd in commands {
@@ -143,7 +140,6 @@ impl MediumStrategy {
 
         return Err(OperationError::NoValidMove);
     }
-    
 }
 
 impl HardStrategy {
@@ -151,6 +147,52 @@ impl HardStrategy {
         player_id: u8,
         server: &mut FlowServer,
     ) -> Result<FlowCommand, OperationError> {
-        MediumStrategy::make_move(player_id, server)
+        if server.phase == GamePhase::Filling {
+            return MediumStrategy::filling_move(server, get_valid_commands(server, player_id));
+        }
+
+        let depth = match server.player_count() {
+            2 => 7,
+            3 => 5,
+            4 => 4,
+            _ => 4, // For more players, reduce depth to avoid long computation
+        };
+
+        let (_, command) = HardStrategy::maxn_search(server, player_id, depth);
+
+        command.ok_or(OperationError::NoValidMove)
+    }
+
+    fn maxn_search(server: &FlowServer, player_id: u8, depth: u8) -> (f64, Option<FlowCommand>) {
+        if depth == 0 || server.game_over() {
+            return (heuristic(server, player_id), None);
+        }
+
+        let mut best_score = f64::NEG_INFINITY;
+        let mut best_command = None;
+
+        // Get all valid commands for the player
+        let commands = get_valid_commands(server, player_id);
+
+        // simulate each command
+        for cmd in commands {
+            let mut new_server = server.clone();
+            if new_server.handle(cmd.clone()).is_err() {
+                continue; // Skip invalid commands
+            }
+
+            // dfs
+            let (score, _) = HardStrategy::maxn_search(&new_server, player_id, depth - 1);
+
+            if score > best_score {
+                best_score = score;
+                best_command = Some(cmd);
+            }
+        }
+
+        if best_score == f64::NEG_INFINITY {
+            return (f64::NEG_INFINITY, None); // No valid moves
+        }
+        (best_score, best_command)
     }
 }
