@@ -1,6 +1,6 @@
 use comui::{
     component::Component,
-    components::{DataComponent, button::QuadButton},
+    components::{DataComponent, button::QuadButton, label::Label},
     layout::{Layout, LayoutBuilder},
     utils::Transform,
 };
@@ -8,12 +8,18 @@ use comui::{
 pub struct SingleChoice {
     choices: Vec<String>,
     selected: usize,
+    label_component: Label,
     btn: QuadButton,
 }
 
 impl SingleChoice {
-    pub fn new(choices: Vec<String>, selected: usize) -> Self {
+    pub fn new(
+        choices: Vec<String>,
+        selected: usize,
+        label_f: impl FnOnce(Label) -> Label,
+    ) -> Self {
         Self {
+            label_component: label_f(Label::new(&choices[selected])),
             choices,
             selected,
             btn: QuadButton::default(),
@@ -45,6 +51,14 @@ impl Layout for SingleChoice {
     fn components(&mut self) -> Vec<(Transform, &mut dyn Component)> {
         LayoutBuilder::new()
             .at_rect((0.0, 0.0, 1.0, 1.0), &mut self.btn as &mut dyn Component)
+            .at_rect(
+                (0.0, 0.0, 1.0, 1.0),
+                &mut self.label_component as &mut dyn Component,
+            )
             .build()
+    }
+
+    fn after_render(&mut self, _: &Transform, _: &mut comui::window::Window) {
+        self.label_component.text = self.choices[self.selected].clone();
     }
 }
