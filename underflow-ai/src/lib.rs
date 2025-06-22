@@ -161,7 +161,11 @@ impl HardStrategy {
 
         let (_, command) = HardStrategy::maxn_search(server, player_id, depth);
 
-        command.ok_or(OperationError::NoValidMove)
+        if command.is_none() {
+            // If no command found, fallback to medium strategy
+            return MediumStrategy::make_move(player_id, server);
+        }
+        Ok(command.unwrap())
     }
 
     fn maxn_search(server: &FlowServer, player_id: u8, depth: i32) -> (f64, Option<FlowCommand>) {
