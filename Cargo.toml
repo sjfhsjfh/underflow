@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["underflow-core", "underflow-main", "underflow-l10n"]
+members = ["underflow-core", "underflow-main", "underflow-l10n", "underflow-ai"]
 
 [workspace.package]
 # description = ""
