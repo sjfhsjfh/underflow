@@ -203,9 +203,8 @@ impl Layout for PreflightScene {
             .map(|(idx, p)| (idx, p.canceled()))
             .find(|(_, canceled)| *canceled)
             .map(|(idx, _)| idx)
-            && player_count > Self::MIN_PLAYERS
         {
-            self.players.remove(idx);
+            if player_count > Self::MIN_PLAYERS { self.players.remove(idx); }
         }
     }
 
