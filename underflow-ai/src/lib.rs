@@ -152,7 +152,7 @@ impl HardStrategy {
             return MediumStrategy::filling_move(server, get_valid_commands(server, player_id));
         }
 
-        let depth = match server.player_count() {
+        let depth:i32 = match server.player_count() as i32 {
             2 => 7,
             3 => 5,
             4 => 4,
@@ -161,11 +161,15 @@ impl HardStrategy {
 
         let (_, command) = HardStrategy::maxn_search(server, player_id, depth);
 
-        command.ok_or(OperationError::NoValidMove)
+        if command.is_none() {
+            // If no command found, fallback to medium strategy
+            return MediumStrategy::make_move(player_id, server);
+        }
+        Ok(command.unwrap())
     }
 
-    fn maxn_search(server: &FlowServer, player_id: u8, depth: u8) -> (f64, Option<FlowCommand>) {
-        if depth == 0 || server.game_over() {
+    fn maxn_search(server: &FlowServer, player_id: u8, depth: i32) -> (f64, Option<FlowCommand>) {
+        if depth <= 0 || server.game_over() {
             return (heuristic(server, player_id), None);
         }
 
@@ -183,7 +187,9 @@ impl HardStrategy {
             }
 
             // dfs
-            let (score, _) = HardStrategy::maxn_search(&new_server, player_id, depth - 1);
+            let next_player = new_server.current_player;
+
+            let (score, _) = HardStrategy::maxn_search(&new_server, next_player, depth - 1);
 
             if score > best_score {
                 best_score = score;
