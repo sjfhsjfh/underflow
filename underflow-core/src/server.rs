@@ -227,6 +227,28 @@ impl FlowServer {
                 }
             }
         }
+
+        let dead_anchors: Vec<_> = self
+            .board
+            .get_cells()
+            .iter()
+            .enumerate()
+            .flat_map(|(x, col)| col.iter().enumerate().map(move |(y, cell)| (x, y, *cell)))
+            .filter_map(|(x, y, cell)| {
+                if let CellState::Anchored(player) = cell {
+                    if self.player_alive(player) {
+                        Some((x as u8, y as u8))
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            })
+            .collect();
+        for (x, y) in dead_anchors {
+            self.board.set(x, y, CellState::Neutral);
+        }
         Ok(())
     }
 }
