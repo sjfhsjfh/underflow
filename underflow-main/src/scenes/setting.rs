@@ -11,7 +11,7 @@ use underflow_l10n::{LANG_NAMES, LANGS};
 use crate::{
     colors,
     components::{button::LabeledButton, data_bar::DataBar, single_choice::SingleChoice},
-    config::{get_config_mut, sync_config},
+    config::{get_config, get_config_mut, sync_config},
     tl,
 };
 
@@ -32,7 +32,11 @@ impl Default for SettingScene {
                 tl!("language").to_string(),
                 SingleChoice::new(
                     LANG_NAMES.iter().map(|lang| lang.to_string()).collect(),
-                    0,
+                    get_config()
+                        .language
+                        .as_ref()
+                        .map(|lang| LANGS.iter().position(|l| lang.as_str() == *l).unwrap_or(0))
+                        .unwrap_or(0),
                     |l| {
                         l.with_align(Align::Center)
                             .with_font_size(Self::DATA_FONT_SIZE)
