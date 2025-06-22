@@ -11,4 +11,10 @@ ai-hard = AI HARD
 plus = +
 ready = READY? START!
 
+pause = PAUSE
+your-turn = YOUR TURN!
+
+resume = RESUME
+exit-to-menu = EXIT TO MENU
+
 language = Language
