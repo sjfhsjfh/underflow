@@ -236,7 +236,7 @@ impl FlowServer {
             .flat_map(|(x, col)| col.iter().enumerate().map(move |(y, cell)| (x, y, *cell)))
             .filter_map(|(x, y, cell)| {
                 if let CellState::Anchored(player) = cell {
-                    if self.player_alive(player) {
+                    if !self.player_alive(player) {
                         Some((x as u8, y as u8))
                     } else {
                         None
