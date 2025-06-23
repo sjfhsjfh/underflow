@@ -11,7 +11,7 @@ version = "0.0.2"
 
 [workspace.dependencies]
 anyhow = "1.0.97"
-comui = { git = "https://github.com/TeamFlos/comui" }
+comui = { git = "https://github.com/TeamFlos/comui", rev = "93265988f06e3edfae7763cef781e406f7dc2f98" }
 fluent = "0.17.0"
 fluent-syntax = "0.12.0"
 lru = "0.14.0"

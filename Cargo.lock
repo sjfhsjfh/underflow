@@ -130,7 +130,7 @@ checksum = "3d7b894f5411737b7867f4827955924d7c254fc9f4d91a6aad6b097804b1018b"
 [[package]]
 name = "comui"
 version = "0.1.0"
-source = "git+https://github.com/TeamFlos/comui#93265988f06e3edfae7763cef781e406f7dc2f98"
+source = "git+https://github.com/TeamFlos/comui?rev=93265988f06e3edfae7763cef781e406f7dc2f98#93265988f06e3edfae7763cef781e406f7dc2f98"
 dependencies = [
  "anyhow",
  "cosmic-text",
