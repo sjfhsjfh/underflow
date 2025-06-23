@@ -9,10 +9,18 @@ use std::fmt::{Display, Formatter};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum CellState {
+    /// Only exists in the filling state
     Empty,
     Neutral,
     Occupied(u8),
     Anchored(u8),
+}
+
+#[derive(Debug, PartialEq, Eq)]
+#[repr(u8)]
+pub enum FlowError {
+    BlockedByAnchor,
+    OutOfBounds,
 }
 
 impl CellState {
@@ -67,6 +75,10 @@ impl Board {
     /// No size check
     pub fn is_occupied(&self, x: u8, y: u8) -> bool {
         !matches!(self.get(x, y), CellState::Empty | CellState::Neutral)
+    }
+
+    pub fn is_neutral(&self, x: u8, y: u8) -> bool {
+        matches!(self.get(x, y), CellState::Neutral)
     }
 
     #[inline]
@@ -192,6 +204,10 @@ impl Board {
             .iter()
             .flatten()
             .all(|&cell| cell != CellState::Empty)
+    }
+
+    pub fn get_cells(&self) -> &Vec<Vec<CellState>> {
+        &self.cells
     }
 }
 

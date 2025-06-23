@@ -1,3 +1,4 @@
+#[derive(Debug, Clone, Copy)]
 pub enum FlowCommand {
     SetOccupied { player: u8, x: u8, y: u8 },
     SetAnchor { player: u8, x: u8, y: u8 },
@@ -41,6 +42,9 @@ pub enum FlowError {
 
     /// Trying to set anchor or fill in a cell that is already occupied
     AlreadyOccupied,
+
+    /// The player is dead, i.e. has no occupied cells left
+    YouAreDead,
 }
 
 impl std::fmt::Display for FlowError {
@@ -52,6 +56,7 @@ impl std::fmt::Display for FlowError {
             FlowError::InvalidPhase => write!(f, "Invalid phase")?,
             FlowError::NotYourTurn => write!(f, "Not your turn")?,
             FlowError::Recurrence => write!(f, "Recurrence")?,
+            FlowError::YouAreDead => write!(f, "You are dead")?,
         }
         Ok(())
     }

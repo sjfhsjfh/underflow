@@ -1,0 +1,10 @@
+[package]
+name = "underflow-ai"
+edition.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[dependencies]
+rand.workspace = true
+rayon = "1.10.0"
+underflow-core = { path = "../underflow-core" }
