@@ -153,64 +153,98 @@ impl HardStrategy {
             return MediumStrategy::filling_move(server, get_valid_commands(server, player_id));
         }
 
-        let depth: i32 = match server.player_count() as i32 {
+        let depth: i32 = match server.player_count() {
             2 => 3,
             3 => 3,
             4 => 3,
             _ => 3,
         };
 
-        let (_, command) = HardStrategy::maxn_search(server, player_id, player_id, depth);
+        let (_, command) = HardStrategy::maxn_search(
+            server,
+            player_id,
+            player_id,
+            depth,
+            f64::NEG_INFINITY,
+            f64::INFINITY,
+        );
 
-        if command.is_none() {
-            // If no command found, fallback to medium strategy
-            return MediumStrategy::make_move(player_id, server);
-        }
-        Ok(command.unwrap())
+        command.map(Ok).unwrap_or_else(|| {
+            // Fallback to medium strategy
+            MediumStrategy::make_move(player_id, server)
+        })
     }
 
     fn maxn_search(
         server: &FlowServer,
-        player_id: u8,
         current_player: u8,
+        root_player: u8,
         depth: i32,
+        alpha: f64,
+        beta: f64,
     ) -> (f64, Option<FlowCommand>) {
         if depth <= 0 || server.game_over() {
-            return (heuristic(server, current_player), None);
+            return (heuristic(server, root_player), None);
         }
 
         // Get all valid commands for the current player
-        let commands = get_valid_commands(server, player_id);
+        let commands = get_valid_commands(server, current_player);
 
-        // Simulate each command in parallel
-        let results: Vec<(f64, FlowCommand)> = commands
-            .into_par_iter()
+        let is_root = current_player == root_player;
+        let mut best_score = if is_root {
+            f64::NEG_INFINITY
+        } else {
+            f64::INFINITY
+        };
+        let mut best_cmd = None;
+
+        let results: Vec<_> = commands
+            .par_iter()
             .filter_map(|cmd| {
                 let mut new_server = server.clone();
 
-                // skip invalid commands
                 if new_server.handle(cmd.clone()).is_err() {
                     return None;
                 }
 
-                // dfs to find the best command
                 let next_player = new_server.current_player;
-                let (score, _) =
-                    HardStrategy::maxn_search(&new_server, next_player, player_id, depth - 1);
-                Some((score, cmd))
+                let (score, _) = HardStrategy::maxn_search(
+                    &new_server,
+                    next_player,
+                    root_player,
+                    depth - 1,
+                    alpha,
+                    beta,
+                );
+
+                Some((score, cmd.clone()))
             })
             .collect();
 
-        if let Some((best_score, best_cmd)) =
-            results.into_iter().max_by(|(score_a, _), (score_b, _)| {
-                score_a
-                    .partial_cmp(score_b)
-                    .unwrap_or(std::cmp::Ordering::Equal)
-            })
-        {
-            (best_score, Some(best_cmd))
-        } else {
-            (f64::NEG_INFINITY, None) // No valid commands found
+        let mut current_alpha = alpha;
+        let mut current_beta = beta;
+
+        for (score, cmd) in results {
+            if is_root {
+                if score > best_score {
+                    best_score = score;
+                    best_cmd = Some(cmd.clone());
+                    current_alpha = current_alpha.max(score);
+                }
+
+                // Alpha-Beta pruning
+                if best_score >= current_beta {
+                    break;
+                }
+            } else {
+                if score < best_score {
+                    best_score = score;
+                    best_cmd = Some(cmd.clone());
+                    current_beta = current_beta.min(score);
+                }
+            }
         }
+
+        (best_score, best_cmd)
     }
 }
