@@ -1,4 +1,5 @@
 pub mod game;
+pub mod pause;
 pub mod preflight;
 pub mod setting;
 pub mod startup;

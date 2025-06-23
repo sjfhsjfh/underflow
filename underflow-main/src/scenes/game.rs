@@ -27,7 +27,7 @@ use underflow_core::{
 use crate::{
     colors,
     components::button::LabeledButton,
-    scenes::{preflight::Player, win::WinScene},
+    scenes::{pause::PauseScene, preflight::Player, win::WinScene},
     tl,
     utils::UTransform,
 };
@@ -426,8 +426,7 @@ impl Layout for GameScene {
 
     fn after_render(&mut self, _: &Transform, _: &mut Window) {
         if self.pause_btn.triggered() {
-            self.next_scene = None;
-            todo!()
+            self.next_scene = Some(NextScene::Push(Box::new(PauseScene::default())));
         }
         if let Some(g) = self.board.triggered_grid {
             self.board.triggered_grid = None;
