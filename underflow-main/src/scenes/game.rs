@@ -331,8 +331,8 @@ pub struct GameScene {
 impl GameScene {
     const HINT_SIZE: f32 = 96.;
 
-    pub fn current_player(&self) -> &Player {
-        &self.players[self.game_server.current_player as usize]
+    pub fn current_player(&self) -> Player {
+        self.players[self.game_server.current_player as usize]
     }
 
     pub fn current_player_color(&self) -> colors::Color {
@@ -409,7 +409,7 @@ impl Layout for GameScene {
         ];
         if let Player::AI(_, diff) = self.current_player() {
             // TODO: make this async...
-            let cmd = AI::new(self.game_server.current_player, *diff)
+            let cmd = AI::new(self.game_server.current_player, diff)
                 .make_move(&mut self.game_server)
                 .unwrap();
             self.game_server.handle(cmd).unwrap();
