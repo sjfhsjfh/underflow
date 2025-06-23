@@ -1,4 +1,5 @@
 use rand::prelude::*;
+use rayon::prelude::*;
 use underflow_core::protocol::FlowCommand;
 use underflow_core::protocol::GamePhase;
 use underflow_core::server::*;
@@ -152,54 +153,98 @@ impl HardStrategy {
             return MediumStrategy::filling_move(server, get_valid_commands(server, player_id));
         }
 
-        let depth:i32 = match server.player_count() as i32 {
-            2 => 7,
-            3 => 5,
-            4 => 4,
-            _ => 4, // For more players, reduce depth to avoid long computation
+        let depth: i32 = match server.player_count() {
+            2 => 3,
+            3 => 3,
+            4 => 3,
+            _ => 3,
         };
 
-        let (_, command) = HardStrategy::maxn_search(server, player_id, depth);
+        let (_, command) = HardStrategy::maxn_search(
+            server,
+            player_id,
+            player_id,
+            depth,
+            f64::NEG_INFINITY,
+            f64::INFINITY,
+        );
 
-        if command.is_none() {
-            // If no command found, fallback to medium strategy
-            return MediumStrategy::make_move(player_id, server);
-        }
-        Ok(command.unwrap())
+        command.map(Ok).unwrap_or_else(|| {
+            // Fallback to medium strategy
+            MediumStrategy::make_move(player_id, server)
+        })
     }
 
-    fn maxn_search(server: &FlowServer, player_id: u8, depth: i32) -> (f64, Option<FlowCommand>) {
+    fn maxn_search(
+        server: &FlowServer,
+        current_player: u8,
+        root_player: u8,
+        depth: i32,
+        alpha: f64,
+        beta: f64,
+    ) -> (f64, Option<FlowCommand>) {
         if depth <= 0 || server.game_over() {
-            return (heuristic(server, player_id), None);
+            return (heuristic(server, root_player), None);
         }
 
-        let mut best_score = f64::NEG_INFINITY;
-        let mut best_command = None;
+        // Get all valid commands for the current player
+        let commands = get_valid_commands(server, current_player);
 
-        // Get all valid commands for the player
-        let commands = get_valid_commands(server, player_id);
+        let is_root = current_player == root_player;
+        let mut best_score = if is_root {
+            f64::NEG_INFINITY
+        } else {
+            f64::INFINITY
+        };
+        let mut best_cmd = None;
 
-        // simulate each command
-        for cmd in commands {
-            let mut new_server = server.clone();
-            if new_server.handle(cmd.clone()).is_err() {
-                continue; // Skip invalid commands
+        let results: Vec<_> = commands
+            .par_iter()
+            .filter_map(|cmd| {
+                let mut new_server = server.clone();
+
+                if new_server.handle(cmd.clone()).is_err() {
+                    return None;
+                }
+
+                let next_player = new_server.current_player;
+                let (score, _) = HardStrategy::maxn_search(
+                    &new_server,
+                    next_player,
+                    root_player,
+                    depth - 1,
+                    alpha,
+                    beta,
+                );
+
+                Some((score, cmd.clone()))
+            })
+            .collect();
+
+        let mut current_alpha = alpha;
+        let mut current_beta = beta;
+
+        for (score, cmd) in results {
+            if is_root {
+                if score > best_score {
+                    best_score = score;
+                    best_cmd = Some(cmd.clone());
+                    current_alpha = current_alpha.max(score);
+                }
+
+                // Alpha-Beta pruning
+                if best_score >= current_beta {
+                    break;
+                }
+            } else {
+                if score < best_score {
+                    best_score = score;
+                    best_cmd = Some(cmd.clone());
+                    current_beta = current_beta.min(score);
+                }
             }
-
-            // dfs
-            let next_player = new_server.current_player;
-
-            let (score, _) = HardStrategy::maxn_search(&new_server, next_player, depth - 1);
-
-            if score > best_score {
-                best_score = score;
-                best_command = Some(cmd);
-            }
         }
 
-        if best_score == f64::NEG_INFINITY {
-            return (f64::NEG_INFINITY, None); // No valid moves
-        }
-        (best_score, best_command)
+        (best_score, best_cmd)
     }
 }

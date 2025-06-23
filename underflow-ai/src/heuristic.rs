@@ -23,7 +23,7 @@ pub fn heuristic(server: &FlowServer, player_id: u8) -> f64 {
 
             if let CellState::Occupied(id) | CellState::Anchored(id) = cell_state {
                 let safety = if matches!(cell_state, CellState::Anchored(_)) {
-                    min_moves_to_boundary * 2.0
+                    0.0 // Anchor is not counted in safety
                 } else {
                     min_moves_to_boundary
                 };
@@ -58,23 +58,23 @@ pub fn calculate_min_moves_to_boundary(
 ) -> f64 {
     if lock_map.2.contains(&(x, y)) {
         // If the cell is locked, return the moves of a center cell
-        return size as f64 / 2.0;
+        return size as f64 / 2.0 + 1.0;
     }
 
-    let left_distance = x as f64;
-    let right_distance = (size - 1 - x) as f64;
-    let top_distance = y as f64;
-    let bottom_distance = (size - 1 - y) as f64;
+    let left_distance = (x + 1) as f64;
+    let right_distance = (size - x) as f64;
+    let top_distance = (y + 1) as f64;
+    let bottom_distance = (size - y) as f64;
 
     // Calculate the minimum distance to the boundary
     let row_moves = if lock_map.0.contains(&y) {
-        f64::INFINITY
+        size as f64 / 2.0 + 1.0
     } else {
         left_distance.min(right_distance)
     };
 
     let col_moves = if lock_map.1.contains(&x) {
-        f64::INFINITY
+        size as f64 / 2.0 + 1.0
     } else {
         top_distance.min(bottom_distance)
     };
@@ -91,7 +91,7 @@ fn calculate_balance_score(player_strength: &HashMap<u8, f64>, player_id: u8) ->
         .map(|(_, &strength)| strength)
         .collect();
 
-    if other_strength.is_empty() {
+    if other_strength.len() == 0 || other_strength.len() == 1 {
         return 0.0; // No other players, balance score is zero
     }
 
@@ -102,7 +102,7 @@ fn calculate_balance_score(player_strength: &HashMap<u8, f64>, player_id: u8) ->
         .sum::<f64>()
         / other_strength.len() as f64;
 
-    15.0 / (1.0 + var.sqrt())
+    10.0 / (1.0 + var.sqrt())
 }
 
 fn get_anchor_lock_state(board: &Board) -> (HashSet<u8>, HashSet<u8>, HashSet<(u8, u8)>) {
